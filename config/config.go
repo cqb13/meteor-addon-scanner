@@ -9,9 +9,9 @@ import (
 )
 
 type Config struct {
-	limitFeatures bool
-	featureLimit  int
-	retryCount    int
+	LimitFeatures bool
+	FeatureLimit  int
+	RetryCount    int
 }
 
 func ParseConfig() Config {
@@ -45,7 +45,7 @@ func ParseConfig() Config {
 				os.Exit(1)
 			}
 			fmt.Printf("\tLimit Features = %v\n", boolVal)
-			config.limitFeatures = boolVal
+			config.LimitFeatures = boolVal
 
 		}
 
@@ -57,7 +57,7 @@ func ParseConfig() Config {
 				os.Exit(1)
 			}
 			fmt.Printf("\tFeature Limit = %v\n", intVal)
-			config.featureLimit = intVal
+			config.FeatureLimit = intVal
 		}
 
 		if strings.HasPrefix(parts[i], "RETRY_COUNT=") {
@@ -68,17 +68,17 @@ func ParseConfig() Config {
 				os.Exit(1)
 			}
 			fmt.Printf("\tRetry Count = %v\n", intVal)
-			config.retryCount = intVal
+			config.RetryCount = intVal
 
 		}
 	}
 
-	if config.featureLimit <= 0 {
+	if config.FeatureLimit <= 0 {
 		fmt.Println("\tFeature limit must be greater than 0")
 		os.Exit(1)
 	}
 
-	if config.retryCount <= 0 {
+	if config.RetryCount <= 0 {
 		fmt.Println("\tRetry count must be greater than 0")
 		os.Exit(1)
 	}

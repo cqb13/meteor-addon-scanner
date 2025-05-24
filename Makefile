@@ -1,9 +1,9 @@
 run:
-	go run ./scanner.go
+	go run ./main.go
 
-build:
+build-project:
 	mkdir -p build
-	go build -o build/scanner ./src
+	go build -o build/scanner 
 
 run-build:
 	./build/scanner

@@ -1,0 +1,35 @@
+package scanner
+
+import (
+	"dev/cqb13/meteor-addon-scanner/config"
+	"net/http"
+)
+
+var defaultHeaders http.Header
+var Config config.Config
+
+func InitDefaultHeaders(token string) {
+	defaultHeaders = http.Header{}
+	defaultHeaders.Add("Authorization", "token "+token)
+	defaultHeaders.Add("Accept", "application/vnd.github.v3+json")
+	defaultHeaders.Add("User-Agent", "cqb13/meteor-addon-scanner")
+}
+
+func SetConfig(conf config.Config) {
+	Config = conf
+}
+
+func BuildRequest(url string) (*http.Request, error) {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	for key, values := range defaultHeaders {
+		for _, value := range values {
+			req.Header.Add(key, value)
+		}
+	}
+
+	return req, nil
+}
