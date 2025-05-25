@@ -2,11 +2,33 @@ package scanner
 
 import (
 	"dev/cqb13/meteor-addon-scanner/config"
+	"io"
 	"net/http"
 )
 
 var defaultHeaders http.Header
 var Config config.Config
+
+func MakeGetRequest(url string) ([]byte, error) {
+	req, err := BuildRequest(url)
+	if err != nil {
+		return nil, err
+	}
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	bytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return bytes, nil
+}
 
 func InitDefaultHeaders(token string) {
 	defaultHeaders = http.Header{}

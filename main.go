@@ -42,25 +42,17 @@ type Links struct {
 
 var conf config.Config
 
-func locator() []string {
-	// matches patterns like `add(new SomeFeatureName(...))`
-	// and captures the feature name (e.g., "SomeFeatureName")
-	var FEATURE_RE = regexp.MustCompile(`(?:add\(new )([^(]+)(?:\([^)]*)\)\)`)
+// matches patterns like `add(new SomeFeatureName(...))`
+// and captures the feature name (e.g., "SomeFeatureName")
+var FEATURE_RE = regexp.MustCompile(`(?:add\(new )([^(]+)(?:\([^)]*)\)\)`)
 
-	// matches Discord invite links, supporting various domains
-	// and formats (e.g., "https://discord.gg/abc123", "discord.com/invite/abc")
-	var INVITE_RE = regexp.MustCompile(`((?:https?:\/\/)?(?:www\.)?(?:discord\.(?:gg|io|me|li|com)|discordapp\.com/invite|dsc\.gg)/[a-zA-Z0-9\-\/]+)`)
+// matches Discord invite links, supporting various domains
+// and formats (e.g., "https://discord.gg/abc123", "discord.com/invite/abc")
+var INVITE_RE = regexp.MustCompile(`((?:https?:\/\/)?(?:www\.)?(?:discord\.(?:gg|io|me|li|com)|discordapp\.com/invite|dsc\.gg)/[a-zA-Z0-9\-\/]+)`)
 
-	// matches Maven-style Minecraft version identifiers like
-	// 'com.mojang:minecraft:1.20.4' and captures the version part (e.g., "1.20.4")
-	var MCVER_RE = regexp.MustCompile(`(?:['"]com\.mojang:minecraft:)([0-9a-z.]+)(?:['"])`)
-
-	_, _, _ = FEATURE_RE, INVITE_RE, MCVER_RE
-
-	var repos []string
-
-	return repos
-}
+// matches Maven-style Minecraft version identifiers like
+// 'com.mojang:minecraft:1.20.4' and captures the version part (e.g., "1.20.4")
+var MCVER_RE = regexp.MustCompile(`(?:['"]com\.mojang:minecraft:)([0-9a-z.]+)(?:['"])`)
 
 func main() {
 	err := godotenv.Load()
@@ -75,5 +67,5 @@ func main() {
 	conf = config.ParseConfig()
 	scanner.SetConfig(conf)
 	fmt.Println("Locating Repositories")
-	scanner.SleepIfRateLimited(scanner.Core)
+	scanner.Locate()
 }

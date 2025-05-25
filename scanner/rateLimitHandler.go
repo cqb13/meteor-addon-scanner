@@ -3,8 +3,6 @@ package scanner
 import (
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"time"
 )
 
@@ -27,19 +25,7 @@ func (r RateLimit) String() string {
 }
 
 func SleepIfRateLimited(kind RateLimit) error {
-	req, err := BuildRequest("https://api.github.com/rate_limit")
-	if err != nil {
-		return err
-	}
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
+	bytes, err := MakeGetRequest("https://api.github.com/rate_limit")
 	if err != nil {
 		return err
 	}
@@ -58,7 +44,7 @@ func SleepIfRateLimited(kind RateLimit) error {
 	}
 
 	var result rateLimitResponse
-	err = json.Unmarshal(body, &result)
+	err = json.Unmarshal(bytes, &result)
 	if err != nil {
 		return err
 	}
@@ -77,12 +63,12 @@ func SleepIfRateLimited(kind RateLimit) error {
 	}
 
 	if remaining > 0 {
-		fmt.Printf("\t[rate limit] %v requests remaining for %v", remaining, kind.String())
+		fmt.Printf("\t[rate limit] %v requests remaining for %v\n", remaining, kind.String())
 		return nil
 	}
 
 	var waitTime = max(reset-int(time.Now().Unix()), 25)
-	fmt.Printf("\t[rate limit] No requests remaining for %v -> Sleeping until reset (%v Seconds)...", kind.String(), waitTime)
+	fmt.Printf("\t[rate limit] No requests remaining for %v -> Sleeping until reset (%v Seconds)...\n", kind.String(), waitTime)
 	time.Sleep(time.Duration(waitTime) * time.Second)
 
 	return nil
