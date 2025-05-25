@@ -8,6 +8,8 @@ import (
 	"time"
 )
 
+const reposPerPage int = 100
+
 // Fetch all repos based on a search
 func fetchBySearch(name string, url string) []string {
 	var repos []string
@@ -61,7 +63,7 @@ func fetchBySearch(name string, url string) []string {
 			}
 		}
 
-		if reposOnPage != Config.ReposPerPage {
+		if reposOnPage != reposPerPage {
 			complete = true
 			break
 		}
@@ -80,7 +82,7 @@ func fetchBySearch(name string, url string) []string {
 // Fetch all repos that are forks of the template
 func fetchByForkOfTemplate() []string {
 	var repos []string
-	url := fmt.Sprintf("https://api.github.com/repos/MeteorDevelopment/meteor-addon-template/forks?per_page=%v&page=", Config.ReposPerPage)
+	url := fmt.Sprintf("https://api.github.com/repos/MeteorDevelopment/meteor-addon-template/forks?per_page=%v&page=", reposPerPage)
 
 	var complete bool = false
 	var page int = 0
@@ -127,7 +129,7 @@ func fetchByForkOfTemplate() []string {
 			}
 		}
 
-		if reposOnPage != Config.ReposPerPage {
+		if reposOnPage != reposPerPage {
 			complete = true
 			break
 		}
@@ -156,9 +158,9 @@ func fetchByForkOfTemplate() []string {
 }
 
 func Locate() []string {
-	url := fmt.Sprintf("https://api.github.com/search/code?q=entrypoints+meteor+extension:json+filename:fabric.mod.json+fork:true+in:file&per_page=%v&page=", Config.ReposPerPage)
+	url := fmt.Sprintf("https://api.github.com/search/code?q=entrypoints+meteor+extension:json+filename:fabric.mod.json+fork:true+in:file&per_page=%v&page=", reposPerPage)
 	reposByEntryPoint := fetchBySearch("fabric.mod.json", url)
-	url = fmt.Sprintf("https://api.github.com/search/code?q=extends+MeteorAddon+language:java+in:file&per_page=%v&page=", Config.ReposPerPage)
+	url = fmt.Sprintf("https://api.github.com/search/code?q=extends+MeteorAddon+language:java+in:file&per_page=%v&page=", reposPerPage)
 	reposByExtendMeteor := fetchBySearch("Extend MeteorAddon", url)
 	reposByForkOfTemplate := fetchByForkOfTemplate()
 
