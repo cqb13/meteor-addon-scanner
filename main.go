@@ -65,6 +65,7 @@ func main() {
 	scanner.InitDefaultHeaders(key)
 
 	conf = config.ParseConfig()
+	scanner.SetReposPerPage(conf.ReposPerPage)
 	scanner.SetConfig(conf)
 	fmt.Println("Locating Repositories")
 	scanner.Locate()

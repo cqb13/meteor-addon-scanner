@@ -12,6 +12,7 @@ type Config struct {
 	LimitFeatures bool
 	FeatureLimit  int
 	RetryCount    int
+	ReposPerPage  int
 }
 
 func ParseConfig() Config {
@@ -46,7 +47,6 @@ func ParseConfig() Config {
 			}
 			fmt.Printf("\tLimit Features = %v\n", boolVal)
 			config.LimitFeatures = boolVal
-
 		}
 
 		if strings.HasPrefix(parts[i], "FEATURE_LIMIT=") {
@@ -69,7 +69,17 @@ func ParseConfig() Config {
 			}
 			fmt.Printf("\tRetry Count = %v\n", intVal)
 			config.RetryCount = intVal
+		}
 
+		if strings.HasPrefix(parts[i], "REPOS_PER_PAGE=") {
+			strVal := strings.Replace(parts[i], "REPOS_PER_PAGE=", "", 1)
+			intVal, err := strconv.Atoi(strVal)
+			if err != nil {
+				fmt.Println("\tFailed to parse REPOS_PER_PAGE to int")
+				os.Exit(1)
+			}
+			fmt.Printf("\tRepos Per Page = %v\n", intVal)
+			config.ReposPerPage = intVal
 		}
 	}
 
@@ -80,6 +90,11 @@ func ParseConfig() Config {
 
 	if config.RetryCount <= 0 {
 		fmt.Println("\tRetry count must be greater than 0")
+		os.Exit(1)
+	}
+
+	if config.ReposPerPage <= 0 {
+		fmt.Println("\tRepos per Page must be greater than 0")
 		os.Exit(1)
 	}
 

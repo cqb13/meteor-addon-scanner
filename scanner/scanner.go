@@ -8,7 +8,11 @@ import (
 	"time"
 )
 
-const reposPerPage = 100
+var reposPerPage = 0
+
+func SetReposPerPage(repos int) {
+	reposPerPage = repos
+}
 
 // Fetch all repos based on a search
 func fetchBySearch(name string, url string) []string {
@@ -89,6 +93,7 @@ func fetchByForkOfTemplate() []string {
 }
 
 func Locate() []string {
+	fmt.Println(reposPerPage)
 	url := fmt.Sprintf("https://api.github.com/search/code?q=entrypoints+meteor+extension:json+filename:fabric.mod.json+fork:true+in:file&per_page=%v&page=", reposPerPage)
 	reposByEntryPoint := fetchBySearch("fabric.mod.json", url)
 	url = fmt.Sprintf("https://api.github.com/search/code?q=extends+MeteorAddon+language:java+in:file&per_page=%v&page=", reposPerPage)
