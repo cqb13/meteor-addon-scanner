@@ -68,7 +68,6 @@ type fabric struct {
 	Name        string   `json:"name"`
 	Description string   `json:"description"`
 	Authors     []string `json:"authors"`
-	Test        string   `json:"test"`
 	Icon        string   `json:"icon"`
 	Entrypoints struct {
 		Meteor []string `json:"meteor"`
@@ -83,38 +82,38 @@ type release struct {
 	} `json:"assets"`
 }
 
-func getRepo(fullName string) (*repository, error) {
+func getRepo(fullName string) (*repository, string, error) {
 	url := fmt.Sprintf("https://api.github.com/repos/%v", fullName)
 	bytes, err := MakeGetRequest(url)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	var repo repository
 
 	err = json.Unmarshal(bytes, &repo)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	return &repo, nil
+	return &repo, string(bytes), nil
 }
 
-func getFabricModJson(fullName string, defaultBranch string) (*fabric, error) {
+func getFabricModJson(fullName string, defaultBranch string) (*fabric, string, error) {
 	url := fmt.Sprintf("https://raw.githubusercontent.com/%v/%v/src/main/resources/fabric.mod.json", fullName, defaultBranch)
 	bytes, err := MakeGetRequest(url)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	var fabricModJson fabric
 
 	err = json.Unmarshal(bytes, &fabricModJson)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	return &fabricModJson, nil
+	return &fabricModJson, string(bytes), nil
 }
 
 // https://api.github.com/repos/{name}/releases
@@ -160,17 +159,36 @@ func getReleaseDetails(fullName string) (string, int, error) {
 	return downloadUrl, downloadCount, nil
 }
 
+func getIcon(fullName string, defaultBranch string, icon string) (string, error) {
+	url := fmt.Sprintf("https://raw.githubusercontent.com/%v/%v/src/main/resources/%vs", fullName, defaultBranch, icon)
+	bytes, err := MakeGetRequest(url)
+	if err != nil {
+		return "", err
+	}
+
+	if string(bytes) == "404: Not Found" {
+		fmt.Println("\t\tMissing icon")
+		return "", nil
+	}
+
+	return url, nil
+}
+
+func findDiscordServer(fullName string, defaultBranch string, entrypoint string, repoStr string, fabricStr string) {
+
+}
+
 func parseRepo(fullName string, number int, total int) (*Addon, error) {
 	var addon Addon
 	fmt.Printf("\tParsing %v, %v/%v\n", fullName, number, total)
 	fmt.Printf("\t")
 	SleepIfRateLimited(Core)
-	repo, err := getRepo(fullName)
+	repo, repoStr, err := getRepo(fullName)
 	if err != nil {
 		return nil, err
 	}
 
-	fabricModJson, err := getFabricModJson(fullName, repo.DefaultBranch)
+	fabricModJson, fabricStr, err := getFabricModJson(fullName, repo.DefaultBranch)
 	if err != nil {
 		return nil, err
 	}
@@ -202,8 +220,11 @@ func parseRepo(fullName string, number int, total int) (*Addon, error) {
 		return nil, err
 	}
 
-	fmt.Printf("download url: %v\n", downloadUrl)
-	fmt.Printf("download count: %v\n", downloadCount)
+	icon, err := getIcon(fullName, repo.DefaultBranch, fabricModJson.Icon)
+
+	findDiscordServer(fullName, repo.DefaultBranch, fabricModJson.Entrypoints.Meteor[0], repoStr, fabricStr)
+
+	_, _, _ = downloadUrl, downloadCount, icon
 
 	return &addon, nil
 }
