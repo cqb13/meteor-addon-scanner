@@ -19,8 +19,8 @@ func validatePaths(verifiedAddons string, output string) error {
 		return fmt.Errorf("'%v' is not a valid path", output)
 	}
 
-	if !strings.HasSuffix(verifiedAddons, ".json") {
-		return fmt.Errorf("Verified addons path must lead to a json file")
+	if !strings.HasSuffix(verifiedAddons, ".txt") {
+		return fmt.Errorf("Verified addons path must lead to a txt file")
 	}
 
 	if !strings.HasSuffix(output, ".json") {
@@ -44,7 +44,7 @@ func main() {
 	args := os.Args
 
 	if len(args) < 3 {
-		fmt.Println("Not enough argument provided: verified-addons.json output.json")
+		fmt.Println("Not enough argument provided: verified-addons.txt output.json")
 		os.Exit(1)
 	}
 

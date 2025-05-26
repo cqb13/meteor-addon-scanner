@@ -58,6 +58,7 @@ type repository struct {
 	CreatedAt     string `json:"created_at"`
 	Fork          bool   `json:"fork"`
 	Archived      bool   `json:"archived"`
+	Homepage      string `json:"homepage"`
 	Owner         struct {
 		Login string `json:"login"`
 	} `json:"owner"`
@@ -287,8 +288,6 @@ func parseRepo(fullName string, number int, total int) (*Addon, error) {
 		return nil, err
 	}
 
-	//TODO: do the site check
-
 	features, err := findFeatures(fullName, repo.DefaultBranch, fabricModJson.Entrypoints.Meteor[0])
 	if err != nil {
 		return nil, err
@@ -297,6 +296,13 @@ func parseRepo(fullName string, number int, total int) (*Addon, error) {
 	version, err := findVersion(fullName, repo.DefaultBranch)
 	if err != nil {
 		return nil, err
+	}
+
+	site := repo.Homepage
+
+	// prevent the homepage being a discord invite
+	if inviteRegex.MatchString(site) {
+		site = ""
 	}
 
 	addon.Name = fabricModJson.Name
@@ -320,8 +326,9 @@ func parseRepo(fullName string, number int, total int) (*Addon, error) {
 	addon.Links.Download = downloadUrl
 	addon.Links.Discord = invite
 	addon.Links.Icon = icon
-	//TODO: add homepage
+	addon.Links.Homepage = site
 
+	fmt.Printf("\tFinished Parsing %v, %v/%v\n", fullName, number, total)
 	return &addon, nil
 }
 
