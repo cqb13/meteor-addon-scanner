@@ -9,6 +9,15 @@ var defaultHeaders http.Header
 
 const RetryAttempts int = 25
 
+func MakeHeadRequest(url string) (int, error) {
+	resp, err := http.Head(url)
+	if err != nil {
+		return 0, err
+	}
+	defer resp.Body.Close()
+	return resp.StatusCode, nil
+}
+
 func MakeGetRequest(url string) ([]byte, error) {
 	req, err := BuildRequest(url)
 	if err != nil {
