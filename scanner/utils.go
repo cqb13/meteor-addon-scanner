@@ -7,6 +7,8 @@ import (
 
 var defaultHeaders http.Header
 
+const RetryAttempts int = 25
+
 func MakeGetRequest(url string) ([]byte, error) {
 	req, err := BuildRequest(url)
 	if err != nil {

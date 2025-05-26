@@ -13,6 +13,7 @@ const reposPerPage int = 100
 // Fetch all repos based on a search
 func fetchBySearch(name string, url string) []string {
 	var repos []string
+	var attempts int = RetryAttempts
 
 	var complete bool = false
 	var page int = 0
@@ -21,13 +22,19 @@ func fetchBySearch(name string, url string) []string {
 		if complete == true {
 			break
 		}
+
+		if attempts == 0 {
+			fmt.Printf("Failed to make search request\n")
+			os.Exit(1)
+		}
+
 		fmt.Printf("\t")
 		SleepIfRateLimited(Search)
 		fmt.Printf("\t\tFetching Page %v -> ", page)
 		bytes, err := MakeGetRequest(fmt.Sprintf("%s%v", url, page))
 		if err != nil {
-			fmt.Printf("Failed to make search request\n")
-			os.Exit(1)
+			attempts -= 1
+			continue
 		}
 
 		if strings.HasSuffix(string(bytes), "\"status\":\"403\"}") {
@@ -82,6 +89,7 @@ func fetchBySearch(name string, url string) []string {
 // Fetch all repos that are forks of the template
 func fetchByForkOfTemplate() []string {
 	var repos []string
+	var attempts int = RetryAttempts
 	url := fmt.Sprintf("https://api.github.com/repos/MeteorDevelopment/meteor-addon-template/forks?per_page=%v&page=", reposPerPage)
 
 	var complete bool = false
@@ -91,13 +99,18 @@ func fetchByForkOfTemplate() []string {
 		if complete == true {
 			break
 		}
+
+		if attempts == 0 {
+			fmt.Printf("Failed to make search request\n")
+			os.Exit(1)
+		}
 		fmt.Printf("\t")
 		SleepIfRateLimited(Search)
 		fmt.Printf("\t\tFetching Page %v -> ", page)
 		bytes, err := MakeGetRequest(fmt.Sprintf("%s%v", url, page))
 		if err != nil {
-			fmt.Printf("Failed to make search request\n")
-			os.Exit(1)
+			attempts -= 1
+			continue
 		}
 
 		if strings.HasSuffix(string(bytes), "\"status\":\"403\"}") {

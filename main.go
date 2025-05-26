@@ -57,10 +57,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Printf("%v\n", args)
-
-	os.Exit(1)
-
 	err = godotenv.Load()
 	if err != nil {
 		fmt.Println("Failed to load env file: ", err)
@@ -70,9 +66,10 @@ func main() {
 	var key string = os.Getenv("KEY")
 	scanner.InitDefaultHeaders(key)
 
-	fmt.Println("Locating Repositories")
-	repos := scanner.Locate()
-	fmt.Printf("Located %v repos\n", len(repos))
+	// fmt.Println("Locating Repositories")
+	// repos := scanner.Locate()
+	// fmt.Printf("Located %v repos\n", len(repos))
 	fmt.Println("Parsing Repositories")
+	var repos = [...]string{"cqb13/Numby-hack"}
 	scanner.ParseRepos(repos)
 }
