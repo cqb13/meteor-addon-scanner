@@ -39,11 +39,15 @@ type Links struct {
 
 // matches patterns like `add(new SomeFeatureName(...))`
 // and captures the feature name (e.g., "SomeFeatureName")
-var FEATURE_RE = regexp.MustCompile(`(?:add\(new )([^(]+)(?:\([^)]*)\)\)`)
+var featureRegex = regexp.MustCompile(`(?:add\(new )([^(]+)(?:\([^)]*)\)\)`)
 
 // matches Maven-style Minecraft version identifiers like
 // 'com.mojang:minecraft:1.20.4' and captures the version part (e.g., "1.20.4")
-var MCVER_RE = regexp.MustCompile(`(?:['"]com\.mojang:minecraft:)([0-9a-z.]+)(?:['"])`)
+var mcverRegex = regexp.MustCompile(`(?:['"]com\.mojang:minecraft:)([0-9a-z.]+)(?:['"])`)
+
+// matches Discord invite links, supporting various domains
+// and formats (e.g., "https://discord.gg/abc123", "discord.com/invite/abc")
+var inviteRegex = regexp.MustCompile(`((?:https?:\/\/)?(?:www\.)?(?:discord\.(?:gg|io|me|li|com)|discordapp\.com/invite|dsc\.gg)/[a-zA-Z0-9\-\/]+)`)
 
 type repository struct {
 	FullName      string `json:"full_name"`
@@ -171,10 +175,6 @@ func getIcon(fullName string, defaultBranch string, icon string) (string, error)
 }
 
 func findDiscordServer(fullName string, defaultBranch string, repoStr string, fabricStr string) (string, error) {
-	// matches Discord invite links, supporting various domains
-	// and formats (e.g., "https://discord.gg/abc123", "discord.com/invite/abc")
-	var INVITE_RE = regexp.MustCompile(`((?:https?:\/\/)?(?:www\.)?(?:discord\.(?:gg|io|me|li|com)|discordapp\.com/invite|dsc\.gg)/[a-zA-Z0-9\-\/]+)`)
-
 	url := fmt.Sprintf("https://raw.githubusercontent.com/%v/%v/README.md", fullName, defaultBranch)
 	bytes, err := MakeGetRequest(url)
 	if err != nil {
@@ -183,9 +183,9 @@ func findDiscordServer(fullName string, defaultBranch string, repoStr string, fa
 
 	readme := string(bytes)
 
-	matches := INVITE_RE.FindAllString(readme, -1)
-	matches = append(matches, INVITE_RE.FindAllString(fabricStr, -1)...)
-	matches = append(matches, INVITE_RE.FindAllString(repoStr, -1)...)
+	matches := inviteRegex.FindAllString(readme, -1)
+	matches = append(matches, inviteRegex.FindAllString(fabricStr, -1)...)
+	matches = append(matches, inviteRegex.FindAllString(repoStr, -1)...)
 
 	for _, invite := range matches {
 		if !regexp.MustCompile(`^https?://`).MatchString(invite) {
@@ -198,6 +198,25 @@ func findDiscordServer(fullName string, defaultBranch string, repoStr string, fa
 	}
 
 	return "", nil
+}
+
+func findFeatures(fullName string, defaultBranch string, entrypoint string) ([]string, error) {
+	url := fmt.Sprintf("https://raw.githubusercontent.com/%v/%v/src/main/java/%v.java", fullName, defaultBranch, strings.ReplaceAll(entrypoint, ".", "/"))
+	bytes, err := MakeGetRequest(url)
+	if err != nil {
+		return nil, err
+	}
+
+	var features []string
+
+	features = append(features, featureRegex.FindAllString(string(bytes), -1)...)
+
+	for i := range features {
+		features[i] = strings.Replace(features[i], "add(new ", "", -1)
+		features[i] = strings.Replace(features[i], "())", "", -1)
+	}
+
+	return features, nil
 }
 
 func parseRepo(fullName string, number int, total int) (*Addon, error) {
@@ -252,9 +271,14 @@ func parseRepo(fullName string, number int, total int) (*Addon, error) {
 		return nil, err
 	}
 
-	fmt.Printf("%v\n", invite)
+	//TODO: do the site check
 
-	_, _, _ = downloadUrl, downloadCount, icon
+	features, err := findFeatures(fullName, repo.DefaultBranch, fabricModJson.Entrypoints.Meteor[0])
+	if err != nil {
+		return nil, err
+	}
+
+	_, _, _, _, _ = downloadUrl, downloadCount, icon, invite, features
 
 	return &addon, nil
 }
