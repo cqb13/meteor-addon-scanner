@@ -20,14 +20,15 @@ type Addon struct {
 }
 
 type Repo struct {
-	Id         string
-	Owner      string
-	Name       string
-	Archived   bool
-	Fork       bool
-	Stars      int
-	Downloads  int
-	LastUpdate string
+	Id           string
+	Owner        string
+	Name         string
+	Archived     bool
+	Fork         bool
+	Stars        int
+	Downloads    int
+	LastUpdate   string
+	CreationDate string
 }
 
 type Links struct {
@@ -35,15 +36,12 @@ type Links struct {
 	Download string
 	Discord  string
 	Homepage string
+	Icon     string
 }
 
 // matches patterns like `add(new SomeFeatureName(...))`
 // and captures the feature name (e.g., "SomeFeatureName")
 var featureRegex = regexp.MustCompile(`(?:add\(new )([^(]+)(?:\([^)]*)\)\)`)
-
-// matches Maven-style Minecraft version identifiers like
-// 'com.mojang:minecraft:1.20.4' and captures the version part (e.g., "1.20.4")
-var mcverRegex = regexp.MustCompile(`(?:['"]com\.mojang:minecraft:)([0-9a-z.]+)(?:['"])`)
 
 // matches Discord invite links, supporting various domains
 // and formats (e.g., "https://discord.gg/abc123", "discord.com/invite/abc")
@@ -51,6 +49,7 @@ var inviteRegex = regexp.MustCompile(`((?:https?:\/\/)?(?:www\.)?(?:discord\.(?:
 
 type repository struct {
 	FullName      string `json:"full_name"`
+	Name          string `json:"name"`
 	Description   string `json:"description"`
 	Stars         int    `json:"stargazers_count"`
 	DefaultBranch string `json:"default_branch"`
@@ -219,6 +218,23 @@ func findFeatures(fullName string, defaultBranch string, entrypoint string) ([]s
 	return features, nil
 }
 
+func findVersion(fullName string, defaultBranch string) (string, error) {
+	url := fmt.Sprintf("https://raw.githubusercontent.com/%v/%v/gradle.properties", fullName, defaultBranch)
+	bytes, err := MakeGetRequest(url)
+	if err != nil {
+		return "", err
+	}
+
+	var version string = ""
+	for line := range strings.SplitSeq(string(bytes), "\n") {
+		if strings.HasPrefix(line, "minecraft_version=") {
+			version = strings.TrimSpace(strings.Replace(line, "minecraft_version=", "", 1))
+		}
+	}
+
+	return version, nil
+}
+
 func parseRepo(fullName string, number int, total int) (*Addon, error) {
 	var addon Addon
 	fmt.Printf("\tParsing %v, %v/%v\n", fullName, number, total)
@@ -278,7 +294,33 @@ func parseRepo(fullName string, number int, total int) (*Addon, error) {
 		return nil, err
 	}
 
-	_, _, _, _, _ = downloadUrl, downloadCount, icon, invite, features
+	version, err := findVersion(fullName, repo.DefaultBranch)
+	if err != nil {
+		return nil, err
+	}
+
+	addon.Name = fabricModJson.Name
+	addon.Description = fabricModJson.Description
+	addon.McVersion = version
+	addon.Authors = authors
+	addon.Features = features
+	addon.FeatureCount = len(features)
+
+	addon.Repo.Id = fullName
+	addon.Repo.Owner = repo.Owner.Login
+	addon.Repo.Name = repo.Name
+	addon.Repo.Archived = repo.Archived
+	addon.Repo.Fork = repo.Fork
+	addon.Repo.Stars = repo.Stars
+	addon.Repo.Downloads = downloadCount
+	addon.Repo.LastUpdate = repo.PushedAt
+	addon.Repo.CreationDate = repo.CreatedAt
+
+	addon.Links.Github = repo.HtmlUrl
+	addon.Links.Download = downloadUrl
+	addon.Links.Discord = invite
+	addon.Links.Icon = icon
+	//TODO: add homepage
 
 	return &addon, nil
 }
@@ -301,6 +343,8 @@ func ParseRepos(repos [1]string) []*Addon {
 		}
 		addons = append(addons, addon)
 	}
+
+	//TODO: verified check
 
 	return addons
 }
