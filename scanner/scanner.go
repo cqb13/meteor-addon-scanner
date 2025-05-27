@@ -70,7 +70,7 @@ func fetchBySearch(name string, url string) []string {
 			}
 		}
 
-		if reposOnPage != reposPerPage {
+		if reposOnPage == 0 {
 			complete = true
 			break
 		}
@@ -142,7 +142,7 @@ func fetchByForkOfTemplate() []string {
 			}
 		}
 
-		if reposOnPage != reposPerPage {
+		if reposOnPage == 0 {
 			complete = true
 			break
 		}
@@ -155,19 +155,7 @@ func fetchByForkOfTemplate() []string {
 		}
 	}
 
-	fmt.Printf("\t\tFiltering out repos ending in '-addon-template' -> ")
-
-	var filteredRepos []string
-
-	for _, full_name := range repos {
-		cleanedName := strings.TrimSpace(full_name)
-		if strings.HasSuffix(strings.ToLower(cleanedName), "-addon-template") {
-			continue
-		}
-		filteredRepos = append(filteredRepos, full_name)
-	}
-	fmt.Printf("Keeping %v of %v repos\n", len(filteredRepos), len(repos))
-	return filteredRepos
+	return repos
 }
 
 func Locate() []string {
@@ -180,5 +168,21 @@ func Locate() []string {
 	repos := append(reposByEntryPoint, reposByExtendMeteor...)
 	repos = append(repos, reposByForkOfTemplate...)
 
-	return repos
+	dedupped := Dedupe(repos)
+	fmt.Printf("Dedupped repos, started with %v, ended with %v\n", len(repos), len(dedupped))
+
+	fmt.Printf("\tFiltering out repos ending in '-addon-template' -> ")
+
+	var filteredRepos []string
+
+	for _, full_name := range dedupped {
+		cleanedName := strings.TrimSpace(full_name)
+		if strings.HasSuffix(strings.ToLower(cleanedName), "-addon-template") {
+			continue
+		}
+		filteredRepos = append(filteredRepos, full_name)
+	}
+	fmt.Printf("Keeping %v of %v repos\n", len(filteredRepos), len(repos))
+
+	return filteredRepos
 }

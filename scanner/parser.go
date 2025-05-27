@@ -340,9 +340,7 @@ func parseRepo(fullName string, number int, total int) (*Addon, error) {
 }
 
 func ParseRepos(verifiedAddonsPath string, repos []string) []*Addon {
-	dedupped := Dedupe(repos)
-	var total int = len(dedupped)
-	fmt.Printf("Dedupped repos, started with %v, ended with %v\n", len(repos), total)
+	var total int = len(repos)
 	var addons []*Addon
 
 	file, err := os.Open(verifiedAddonsPath)
@@ -362,7 +360,7 @@ func ParseRepos(verifiedAddonsPath string, repos []string) []*Addon {
 		verifiedAddons = append(verifiedAddons, line)
 	}
 
-	for i, fullName := range dedupped {
+	for i, fullName := range repos {
 		addon, err := parseRepo(fullName, i+1, total)
 
 		if err != nil {
@@ -377,7 +375,7 @@ func ParseRepos(verifiedAddonsPath string, repos []string) []*Addon {
 		addons = append(addons, addon)
 	}
 
-	fmt.Printf("Found %v valid addons out of %v repositories\n", len(addons), len(dedupped))
+	fmt.Printf("Found %v valid addons out of %v repositories\n", len(addons), len(repos))
 
 	return addons
 }
