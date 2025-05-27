@@ -342,7 +342,6 @@ func parseRepo(fullName string, number int, total int) (*Addon, error) {
 func ParseRepos(verifiedAddonsPath string, repos []string) []*Addon {
 	var total int = len(repos)
 	var addons []*Addon
-	var attempts int = RetryAttempts
 
 	file, err := os.Open(verifiedAddonsPath)
 	if err != nil {
@@ -365,11 +364,7 @@ func ParseRepos(verifiedAddonsPath string, repos []string) []*Addon {
 		addon, err := parseRepo(fullName, i+1, total)
 
 		if err != nil {
-			if attempts == 0 {
-				fmt.Printf("Failed to parse %v repositories -> something is very wrong", RetryAttempts)
-			}
 			fmt.Printf("\tFailed to parse %v: %v\n", fullName, err)
-			attempts -= 1
 			continue
 		}
 
@@ -379,6 +374,8 @@ func ParseRepos(verifiedAddonsPath string, repos []string) []*Addon {
 
 		addons = append(addons, addon)
 	}
+
+	fmt.Printf("Found %v valid addons out of %v repositories\n", len(addons), len(repos))
 
 	return addons
 }
