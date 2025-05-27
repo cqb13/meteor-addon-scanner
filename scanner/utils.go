@@ -9,6 +9,20 @@ var defaultHeaders http.Header
 
 const RetryAttempts int = 25
 
+func Dedupe(input []string) []string {
+	seen := make(map[string]struct{})
+	result := []string{}
+
+	for _, str := range input {
+		if _, ok := seen[str]; !ok {
+			seen[str] = struct{}{}
+			result = append(result, str)
+		}
+	}
+
+	return result
+}
+
 func MakeHeadRequest(url string) (int, error) {
 	resp, err := http.Head(url)
 	if err != nil {
