@@ -3,40 +3,43 @@ package scanner
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"os"
 	"regexp"
+	"slices"
 	"strings"
 )
 
 type Addon struct {
-	Name         string
-	Description  string
-	McVersion    string
-	Authors      []string
-	Features     []string
-	FeatureCount int
-	Verified     bool
-	Repo         Repo
-	Links        Links
+	Name         string   `json:"name"`
+	Description  string   `json:"description"`
+	McVersion    string   `json:"mc_version"`
+	Authors      []string `json:"authors"`
+	Features     []string `json:"features"`
+	FeatureCount int      `json:"feature_count"`
+	Verified     bool     `json:"verified"`
+	Repo         Repo     `json:"repo"`
+	Links        Links    `json:"links"`
 }
 
 type Repo struct {
-	Id           string
-	Owner        string
-	Name         string
-	Archived     bool
-	Fork         bool
-	Stars        int
-	Downloads    int
-	LastUpdate   string
-	CreationDate string
+	Id           string `json:"id"`
+	Owner        string `json:"owner"`
+	Name         string `json:"name"`
+	Archived     bool   `json:"archived"`
+	Fork         bool   `json:"fork"`
+	Stars        int    `json:"stars"`
+	Downloads    int    `json:"downloads"`
+	LastUpdate   string `json:"last_update"`
+	CreationDate string `json:"creation_date"`
 }
 
 type Links struct {
-	Github   string
-	Download string
-	Discord  string
-	Homepage string
-	Icon     string
+	Github   string `json:"github"`
+	Download string `json:"download"`
+	Discord  string `json:"discord"`
+	Homepage string `json:"homepage"`
+	Icon     string `json:"icon"`
 }
 
 // matches patterns like `add(new SomeFeatureName(...))`
@@ -237,7 +240,6 @@ func findVersion(fullName string, defaultBranch string) (string, error) {
 }
 
 func parseRepo(fullName string, number int, total int) (*Addon, error) {
-	var addon Addon
 	fmt.Printf("\tParsing %v, %v/%v\n", fullName, number, total)
 	fmt.Printf("\t")
 	SleepIfRateLimited(Core)
@@ -305,37 +307,59 @@ func parseRepo(fullName string, number int, total int) (*Addon, error) {
 		site = ""
 	}
 
-	addon.Name = fabricModJson.Name
-	addon.Description = fabricModJson.Description
-	addon.McVersion = version
-	addon.Authors = authors
-	addon.Features = features
-	addon.FeatureCount = len(features)
-
-	addon.Repo.Id = fullName
-	addon.Repo.Owner = repo.Owner.Login
-	addon.Repo.Name = repo.Name
-	addon.Repo.Archived = repo.Archived
-	addon.Repo.Fork = repo.Fork
-	addon.Repo.Stars = repo.Stars
-	addon.Repo.Downloads = downloadCount
-	addon.Repo.LastUpdate = repo.PushedAt
-	addon.Repo.CreationDate = repo.CreatedAt
-
-	addon.Links.Github = repo.HtmlUrl
-	addon.Links.Download = downloadUrl
-	addon.Links.Discord = invite
-	addon.Links.Icon = icon
-	addon.Links.Homepage = site
+	addon := Addon{
+		Name:         fabricModJson.Name,
+		Description:  fabricModJson.Description,
+		McVersion:    version,
+		Authors:      authors,
+		Features:     features,
+		FeatureCount: len(features),
+		Verified:     false,
+		Repo: Repo{
+			Id:           fullName,
+			Owner:        repo.Owner.Login,
+			Name:         repo.Name,
+			Archived:     repo.Archived,
+			Fork:         repo.Fork,
+			Stars:        repo.Stars,
+			Downloads:    downloadCount,
+			LastUpdate:   repo.PushedAt,
+			CreationDate: repo.CreatedAt,
+		},
+		Links: Links{
+			Github:   repo.HtmlUrl,
+			Download: downloadUrl,
+			Discord:  invite,
+			Icon:     icon,
+			Homepage: site,
+		},
+	}
 
 	fmt.Printf("\tFinished Parsing %v, %v/%v\n", fullName, number, total)
 	return &addon, nil
 }
 
-func ParseRepos(repos [1]string) []*Addon {
+func ParseRepos(verifiedAddonsPath string, repos []string) []*Addon {
 	var total int = len(repos)
 	var addons []*Addon
 	var attempts int = RetryAttempts
+
+	file, err := os.Open(verifiedAddonsPath)
+	if err != nil {
+		fmt.Printf("Failed to load verified addons: %v\n", err)
+	}
+	defer file.Close()
+
+	bytes, err := io.ReadAll(file)
+	if err != nil {
+		fmt.Printf("Failed to read verified addons: %v\n", err)
+	}
+
+	var verifiedAddons []string
+
+	for line := range strings.SplitSeq(string(bytes), "\n") {
+		verifiedAddons = append(verifiedAddons, line)
+	}
 
 	for i, fullName := range repos {
 		addon, err := parseRepo(fullName, i+1, total)
@@ -344,14 +368,17 @@ func ParseRepos(repos [1]string) []*Addon {
 			if attempts == 0 {
 				fmt.Printf("Failed to parse %v repositories -> something is very wrong", RetryAttempts)
 			}
-			fmt.Printf("\tFailed to parse %v: %v", fullName, err)
+			fmt.Printf("\tFailed to parse %v: %v\n", fullName, err)
 			attempts -= 1
 			continue
 		}
+
+		if slices.Contains(verifiedAddons, addon.Repo.Id) {
+			addon.Verified = true
+		}
+
 		addons = append(addons, addon)
 	}
-
-	//TODO: verified check
 
 	return addons
 }

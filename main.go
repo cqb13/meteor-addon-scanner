@@ -2,6 +2,7 @@ package main
 
 import (
 	"dev/cqb13/meteor-addon-scanner/scanner"
+	"encoding/json"
 	"fmt"
 	"io/fs"
 	"os"
@@ -66,10 +67,28 @@ func main() {
 	var key string = os.Getenv("KEY")
 	scanner.InitDefaultHeaders(key)
 
-	// fmt.Println("Locating Repositories")
-	// repos := scanner.Locate()
-	// fmt.Printf("Located %v repos\n", len(repos))
+	fmt.Println("Locating Repositories")
+	repos := scanner.Locate()
+	fmt.Printf("Located %v repos\n", len(repos))
 	fmt.Println("Parsing Repositories")
-	var repos = [...]string{"cqb13/Numby-hack"}
-	scanner.ParseRepos(repos)
+	addons := scanner.ParseRepos(verifiedAddonsPath, repos)
+
+	jsonData, err := json.Marshal(addons)
+	if err != nil {
+		fmt.Printf("Failed to convert addons to JSON: %v", err)
+	}
+
+	file, err := os.Create(outputPath)
+	if err != nil {
+		fmt.Printf("Failed to create output file: %v", err)
+	}
+	defer file.Close()
+
+	_, err = file.Write(jsonData)
+	if err != nil {
+		fmt.Println("Error writing to file:", err)
+		return
+	}
+
+	fmt.Println("Done!")
 }
