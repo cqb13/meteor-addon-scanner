@@ -4,22 +4,14 @@ import (
 	"dev/cqb13/meteor-addon-scanner/scanner"
 	"encoding/json"
 	"fmt"
-	"io/fs"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/joho/godotenv"
 )
 
 func validatePaths(verifiedAddons string, output string) error {
-	if !fs.ValidPath(verifiedAddons) {
-		return fmt.Errorf("'%v' is not a valid path", verifiedAddons)
-	}
-
-	if !fs.ValidPath(output) {
-		return fmt.Errorf("'%v' is not a valid path", output)
-	}
-
 	if !strings.HasSuffix(verifiedAddons, ".txt") {
 		return fmt.Errorf("Verified addons path must lead to a txt file")
 	}
@@ -28,13 +20,19 @@ func validatePaths(verifiedAddons string, output string) error {
 		return fmt.Errorf("Output path must lead to a json file")
 	}
 
-	_, err := os.Stat(verifiedAddons)
-	if err != nil && !os.IsNotExist(err) {
+	if _, err := filepath.Abs(verifiedAddons); err != nil {
+		return fmt.Errorf("'%v' is not a valid path: %v", verifiedAddons, err)
+	}
+
+	if _, err := filepath.Abs(output); err != nil {
+		return fmt.Errorf("'%v' is not a valid path: %v", output, err)
+	}
+
+	if _, err := os.Stat(verifiedAddons); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("Failed to read stats for '%v'", verifiedAddons)
 	}
 
-	_, err = os.Stat(output)
-	if err == nil {
+	if _, err := os.Stat(output); err == nil {
 		return fmt.Errorf("Output path already exists")
 	}
 
