@@ -30,3 +30,4 @@ RacoonDog/MeteorServerSeeker
 RattlesHyper/lyra-addon
 Nooniboi/Public-Ikea
 ridglef/walper-addon
+MeteorDevelopment/meteor-addon-template

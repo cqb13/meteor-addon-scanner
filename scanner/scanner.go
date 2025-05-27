@@ -8,11 +8,12 @@ import (
 	"time"
 )
 
+var repos = make(map[string]bool)
+
 const reposPerPage int = 100
 
 // Fetch all repos based on a search
-func fetchBySearch(name string, url string) []string {
-	var repos []string
+func fetchBySearch(name string, url string) {
 	var attempts int = RetryAttempts
 
 	var complete bool = false
@@ -65,8 +66,10 @@ func fetchBySearch(name string, url string) []string {
 		fmt.Printf("Found %v Repositories\n", reposOnPage)
 
 		for _, repo := range result.Items {
-			if !repo.Repository.Private {
-				repos = append(repos, repo.Repository.FullName)
+			_, ok := repos[repo.Repository.FullName]
+
+			if !repo.Repository.Private && !ok && !strings.HasSuffix(strings.ToLower(repo.Repository.FullName), "-addon-template") {
+				repos[repo.Repository.FullName] = false
 			}
 		}
 
@@ -82,13 +85,10 @@ func fetchBySearch(name string, url string) []string {
 			break
 		}
 	}
-
-	return repos
 }
 
 // Fetch all repos that are forks of the template
-func fetchByForkOfTemplate() []string {
-	var repos []string
+func fetchByForkOfTemplate() {
 	var attempts int = RetryAttempts
 	url := fmt.Sprintf("https://api.github.com/repos/MeteorDevelopment/meteor-addon-template/forks?per_page=%v&page=", reposPerPage)
 
@@ -137,8 +137,10 @@ func fetchByForkOfTemplate() []string {
 		fmt.Printf("Found %v Repositories\n", reposOnPage)
 
 		for _, repo := range result {
-			if !repo.Private {
-				repos = append(repos, repo.FullName)
+			_, ok := repos[repo.FullName]
+
+			if !repo.Private && !ok && !strings.HasSuffix(strings.ToLower(repo.FullName), "-addon-template") {
+				repos[repo.FullName] = false
 			}
 		}
 
@@ -154,35 +156,18 @@ func fetchByForkOfTemplate() []string {
 			break
 		}
 	}
-
-	return repos
 }
 
-func Locate() []string {
-	url := fmt.Sprintf("https://api.github.com/search/code?q=entrypoints+meteor+extension:json+filename:fabric.mod.json+fork:true+in:file&per_page=%v&page=", reposPerPage)
-	reposByEntryPoint := fetchBySearch("fabric.mod.json", url)
-	url = fmt.Sprintf("https://api.github.com/search/code?q=extends+MeteorAddon+language:java+in:file&per_page=%v&page=", reposPerPage)
-	reposByExtendMeteor := fetchBySearch("Extend MeteorAddon", url)
-	reposByForkOfTemplate := fetchByForkOfTemplate()
-
-	repos := append(reposByEntryPoint, reposByExtendMeteor...)
-	repos = append(repos, reposByForkOfTemplate...)
-
-	dedupped := Dedupe(repos)
-	fmt.Printf("Dedupped repos, started with %v, ended with %v\n", len(repos), len(dedupped))
-
-	fmt.Printf("\tFiltering out repos ending in '-addon-template' -> ")
-
-	var filteredRepos []string
-
-	for _, full_name := range dedupped {
-		cleanedName := strings.TrimSpace(full_name)
-		if strings.HasSuffix(strings.ToLower(cleanedName), "-addon-template") {
-			continue
-		}
-		filteredRepos = append(filteredRepos, full_name)
+func Locate(verifiedAddons []string) map[string]bool {
+	for _, addon := range verifiedAddons {
+		repos[addon] = true
 	}
-	fmt.Printf("Keeping %v of %v repos\n", len(filteredRepos), len(repos))
 
-	return filteredRepos
+	url := fmt.Sprintf("https://api.github.com/search/code?q=entrypoints+meteor+extension:json+filename:fabric.mod.json+fork:true+in:file&per_page=%v&page=", reposPerPage)
+	fetchBySearch("fabric.mod.json", url)
+	url = fmt.Sprintf("https://api.github.com/search/code?q=extends+MeteorAddon+language:java+in:file&per_page=%v&page=", reposPerPage)
+	fetchBySearch("Extend MeteorAddon", url)
+	fetchByForkOfTemplate()
+
+	return repos
 }

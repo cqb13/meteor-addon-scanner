@@ -3,10 +3,7 @@ package scanner
 import (
 	"encoding/json"
 	"fmt"
-	"io"
-	"os"
 	"regexp"
-	"slices"
 	"strings"
 )
 
@@ -339,40 +336,24 @@ func parseRepo(fullName string, number int, total int) (*Addon, error) {
 	return &addon, nil
 }
 
-func ParseRepos(verifiedAddonsPath string, repos []string) []*Addon {
+func ParseRepos(repos map[string]bool) []*Addon {
 	var total int = len(repos)
 	var addons []*Addon
 
-	file, err := os.Open(verifiedAddonsPath)
-	if err != nil {
-		fmt.Printf("Failed to load verified addons: %v\n", err)
-	}
-	defer file.Close()
-
-	bytes, err := io.ReadAll(file)
-	if err != nil {
-		fmt.Printf("Failed to read verified addons: %v\n", err)
-	}
-
-	var verifiedAddons []string
-
-	for line := range strings.SplitSeq(string(bytes), "\n") {
-		verifiedAddons = append(verifiedAddons, line)
-	}
-
-	for i, fullName := range repos {
-		addon, err := parseRepo(fullName, i+1, total)
+	var addonNum = 1
+	for key, value := range repos {
+		addon, err := parseRepo(key, addonNum, total)
 
 		if err != nil {
-			fmt.Printf("\tFailed to parse %v: %v\n", fullName, err)
+			fmt.Printf("\tFailed to parse %v: %v\n", key, err)
+			addonNum++
 			continue
 		}
 
-		if slices.Contains(verifiedAddons, addon.Repo.Id) {
-			addon.Verified = true
-		}
+		addon.Verified = value
 
 		addons = append(addons, addon)
+		addonNum++
 	}
 
 	fmt.Printf("Found %v valid addons out of %v repositories\n", len(addons), len(repos))

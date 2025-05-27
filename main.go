@@ -4,6 +4,7 @@ import (
 	"dev/cqb13/meteor-addon-scanner/scanner"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -65,18 +66,37 @@ func main() {
 	var key string = os.Getenv("KEY")
 	scanner.InitDefaultHeaders(key)
 
+	file, err := os.Open(verifiedAddonsPath)
+	if err != nil {
+		fmt.Printf("Failed to load verified addons: %v\n", err)
+	}
+	defer file.Close()
+
+	bytes, err := io.ReadAll(file)
+	if err != nil {
+		fmt.Printf("Failed to read verified addons: %v\n", err)
+	}
+
+	var verifiedAddons []string
+
+	for line := range strings.SplitSeq(string(bytes), "\n") {
+		if line != "" {
+			verifiedAddons = append(verifiedAddons, strings.TrimSpace(line))
+		}
+	}
+
 	fmt.Println("Locating Repositories")
-	repos := scanner.Locate()
+	repos := scanner.Locate(verifiedAddons)
 	fmt.Printf("Located %v repos\n", len(repos))
 	fmt.Println("Parsing Repositories")
-	addons := scanner.ParseRepos(verifiedAddonsPath, repos)
+	addons := scanner.ParseRepos(repos)
 
 	jsonData, err := json.Marshal(addons)
 	if err != nil {
 		fmt.Printf("Failed to convert addons to JSON: %v", err)
 	}
 
-	file, err := os.Create(outputPath)
+	file, err = os.Create(outputPath)
 	if err != nil {
 		fmt.Printf("Failed to create output file: %v", err)
 	}
