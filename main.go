@@ -94,11 +94,13 @@ func main() {
 	jsonData, err := json.Marshal(addons)
 	if err != nil {
 		fmt.Printf("Failed to convert addons to JSON: %v", err)
+		return
 	}
 
 	file, err = os.Create(outputPath)
 	if err != nil {
 		fmt.Printf("Failed to create output file: %v", err)
+		return
 	}
 	defer file.Close()
 
