@@ -31,3 +31,4 @@ RattlesHyper/lyra-addon
 Nooniboi/Public-Ikea
 ridglef/walper-addon
 MeteorDevelopment/meteor-addon-template
+X-C-0/Catpuccin-Addon
