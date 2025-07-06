@@ -2,7 +2,7 @@
 
 A tool to create a list of Meteor Client addons from github.
 
-Check out the [Meteor Addon List](https://meteor-addons.cqb13.dev/)
+Check out the [Meteor Addon List](https://www.meteoraddons.com)
 
 ## Usage
 
