@@ -118,38 +118,57 @@ func getFabricModJson(fullName string, defaultBranch string) (*fabric, string, e
 
 // https://api.github.com/repos/{name}/releases
 func getReleaseDetails(fullName string) (string, int, error) {
-	url := fmt.Sprintf("https://api.github.com/repos/%v/releases", fullName)
-	bytes, err := MakeGetRequest(url)
-	if err != nil {
-		return "", 0, err
-	}
-
-	var releases []release
-
-	err = json.Unmarshal(bytes, &releases)
-	if err != nil {
-		return "", 0, err
-	}
+	url := fmt.Sprintf("https://api.github.com/repos/%v/releases?per_page=100&page=", fullName)
 
 	var downloadCount int = 0
 	var downloadUrl string = ""
 
-	for _, release := range releases {
-		for _, asset := range release.Assets {
-			name := strings.ToLower(asset.Name)
+	var complete bool = false
+	var page int = 1
 
-			if strings.HasSuffix(name, "-dev.jar") || strings.HasSuffix(name, "-sources.jar") {
-				continue
-			}
+	for {
+		if complete {
+			break
+		}
 
-			if strings.HasSuffix(name, ".jar") {
-				downloadCount += asset.Downloads
-				if downloadUrl == "" {
-					downloadUrl = asset.Url
+		SleepIfRateLimited(Core)
+
+		bytes, err := MakeGetRequest(fmt.Sprintf("%v%v", url, page))
+		if err != nil {
+			return "", 0, err
+		}
+
+		var releases []release
+
+		err = json.Unmarshal(bytes, &releases)
+		if err != nil {
+			return "", 0, err
+		}
+
+		if len(releases) == 0 {
+			complete = true
+			break
+		}
+
+		for _, release := range releases {
+			for _, asset := range release.Assets {
+				name := strings.ToLower(asset.Name)
+
+				if strings.HasSuffix(name, "-dev.jar") || strings.HasSuffix(name, "-sources.jar") {
+					continue
 				}
-				break
+
+				if strings.HasSuffix(name, ".jar") {
+					downloadCount += asset.Downloads
+					if downloadUrl == "" {
+						downloadUrl = asset.Url
+					}
+					break
+				}
 			}
 		}
+
+		page += 1
 	}
 
 	if downloadUrl == "" {
