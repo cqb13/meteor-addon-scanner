@@ -4,6 +4,8 @@ A tool to create a list of Meteor Client addons from github.
 
 Check out the [Meteor Addon List](https://www.meteoraddons.com)
 
+<a href="https://discord.gg/XU7Y9G46KD"><img src="https://invidget.switchblade.xyz/XU7Y9G46KD"></a>
+
 ## Usage
 
 1. Create a **.env** file with a value **KEY** with a github API key with read access to public repositories
