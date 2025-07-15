@@ -91,15 +91,40 @@ func main() {
 	fmt.Println("Parsing Repositories")
 	addons := scanner.ParseRepos(repos)
 
+	fmt.Println("Validating Forked Verified Addons")
+	for _, addon := range addons {
+		if !addon.Verified || !addon.Repo.Fork {
+			continue
+		}
+
+		result, err := scanner.ValidateForkedVerifiedAddons(*addon)
+		if err != nil {
+			fmt.Printf("\tFailed to validate forked verified addon: %v\n", err)
+			continue
+		}
+
+		fmt.Printf("\t %s: ", addon.Repo.Id)
+		switch result {
+		case scanner.Valid:
+			fmt.Printf("Is valid\n")
+		case scanner.InvalidChildTooOld:
+			fmt.Printf("Repo has not been updated in 6 months -> no longer verified\n")
+			addon.Verified = false
+		case scanner.InvalidParentTooRecent:
+			fmt.Printf("Parent repo was updated within 6 months of the fork -> no longer verified\n")
+			addon.Verified = false
+		}
+	}
+
 	jsonData, err := json.Marshal(addons)
 	if err != nil {
-		fmt.Printf("Failed to convert addons to JSON: %v", err)
+		fmt.Printf("Failed to convert addons to JSON: %v\n", err)
 		return
 	}
 
 	file, err = os.Create(outputPath)
 	if err != nil {
-		fmt.Printf("Failed to create output file: %v", err)
+		fmt.Printf("Failed to create output file: %v\b", err)
 		return
 	}
 	defer file.Close()
