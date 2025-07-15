@@ -36,8 +36,8 @@ scanner anticope-verified.txt addons.json
       "fork": true,
       "stars": 0,
       "downloads": 0,
-      "last_update": "string",
-      "creation_date": "string"
+      "last_update": "string RFC3339",
+      "creation_date": "string RFC3339"
     },
     "links": {
       "github": "string",

@@ -17,7 +17,6 @@ RickyTheRacc/ElytraBruh
 0xEnjoy/AutoVclip
 Bennooo/banana-for-everyone
 MeteorClientPlus/MeteorPlus
-RacoonDog/bidoof-meteor
 TaxEvasiqn/allah-hack
 RedCarlos26/HIGTools
 cqb13/Numby-hack
@@ -26,7 +25,6 @@ etianl/Trouser-Streak
 RacoonDog/Electron
 KassuK1/BlackOut
 stefexec/gurkens-gadgetry-public
-RacoonDog/MeteorServerSeeker
 RattlesHyper/lyra-addon
 Nooniboi/Public-Ikea
 ridglef/walper-addon
