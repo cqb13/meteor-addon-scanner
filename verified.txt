@@ -32,3 +32,4 @@ MeteorDevelopment/meteor-addon-template
 X-C-0/Catpuccin-Addon
 realnnpg/glazed
 H1ggsK/BlackOut
+asteroide-development/Asteroide
