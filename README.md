@@ -25,8 +25,12 @@ scanner anticope-verified.txt addons.json
     "description": "string",
     "mc_version": "string",
     "authors": ["string"],
-    "features": ["string", "string"],
-    "feature_count": 0,
+    "features": {
+      "modules": ["string"],
+      "commands": ["string"],
+      "hud_elements": ["string"],
+      "feature_count": 0
+    },
     "verified": false,
     "repo": {
       "id": "string",

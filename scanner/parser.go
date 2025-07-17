@@ -8,15 +8,21 @@ import (
 )
 
 type Addon struct {
-	Name         string   `json:"name"`
-	Description  string   `json:"description"`
-	McVersion    string   `json:"mc_version"`
-	Authors      []string `json:"authors"`
-	Features     []string `json:"features"`
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
+	McVersion   string   `json:"mc_version"`
+	Authors     []string `json:"authors"`
+	Features    Features `json:"features"`
+	Verified    bool     `json:"verified"`
+	Repo        Repo     `json:"repo"`
+	Links       Links    `json:"links"`
+}
+
+type Features struct {
+	Modules      []string `json:"modules"`
+	Commands     []string `json:"commands"`
+	HudElements  []string `json:"hud_elements"`
 	FeatureCount int      `json:"feature_count"`
-	Verified     bool     `json:"verified"`
-	Repo         Repo     `json:"repo"`
-	Links        Links    `json:"links"`
 }
 
 type Repo struct {
@@ -209,9 +215,7 @@ func findDiscordServer(fullName string, defaultBranch string, repoStr string, fa
 	for _, invite := range matches {
 		if !regexp.MustCompile(`^https?://`).MatchString(invite) {
 			invite = "https://" + invite
-		}
-		status, err := MakeHeadRequest(invite)
-		if err == nil && status != 404 {
+		} status, err := MakeHeadRequest(invite) if err == nil && status != 404 {
 			return invite, nil
 		}
 	}
@@ -219,23 +223,42 @@ func findDiscordServer(fullName string, defaultBranch string, repoStr string, fa
 	return "", nil
 }
 
-func findFeatures(fullName string, defaultBranch string, entrypoint string) ([]string, error) {
+func splitCamelCase(input string) string {
+	re := regexp.MustCompile(`([a-z])([A-Z])`)
+	return re.ReplaceAllString(input, "$1 $2")
+}
+
+func findFeatures(fullName string, defaultBranch string, entrypoint string) (Features, error) {
 	url := fmt.Sprintf("https://raw.githubusercontent.com/%v/%v/src/main/java/%v.java", fullName, defaultBranch, strings.ReplaceAll(entrypoint, ".", "/"))
 	bytes, err := MakeGetRequest(url)
 	if err != nil {
-		return nil, err
+		return Features{}, err
 	}
 
-	var features []string
+	source := string(bytes)
 
-	features = append(features, featureRegex.FindAllString(string(bytes), -1)...)
+	moduleRegex := regexp.MustCompile(`Modules\.get\(\)\.add\(new (\w+)\(\)\)`)
+	hudRegex := regexp.MustCompile(`Hud\.get\(\)\.register\((\w+)\.INFO\)`)
+	commandRegex := regexp.MustCompile(`Commands\.add\(new (\w+)\(\)\)`)
 
-	for i := range features {
-		features[i] = strings.Replace(features[i], "add(new ", "", -1)
-		features[i] = strings.Replace(features[i], "())", "", -1)
+	var modules, hudElements, commands []string
+
+	for _, match := range moduleRegex.FindAllStringSubmatch(source, -1) {
+		modules = append(modules, splitCamelCase(match[1]))
+	}
+	for _, match := range hudRegex.FindAllStringSubmatch(source, -1) {
+		hudElements = append(hudElements, splitCamelCase(match[1]))
+	}
+	for _, match := range commandRegex.FindAllStringSubmatch(source, -1) {
+		commands = append(commands, splitCamelCase(match[1]))
 	}
 
-	return features, nil
+	return Features{
+		Modules:      modules,
+		Commands:     commands,
+		HudElements:  hudElements,
+		FeatureCount: len(modules) + len(hudElements) + len(commands),
+	}, nil
 }
 
 func findVersion(fullName string, defaultBranch string) (string, error) {
@@ -324,13 +347,12 @@ func parseRepo(fullName string, number int, total int) (*Addon, error) {
 	}
 
 	addon := Addon{
-		Name:         fabricModJson.Name,
-		Description:  fabricModJson.Description,
-		McVersion:    version,
-		Authors:      authors,
-		Features:     features,
-		FeatureCount: len(features),
-		Verified:     false,
+		Name:        fabricModJson.Name,
+		Description: fabricModJson.Description,
+		McVersion:   version,
+		Authors:     authors,
+		Features:    features,
+		Verified:    false,
 		Repo: Repo{
 			Id:           fullName,
 			Owner:        repo.Owner.Login,
