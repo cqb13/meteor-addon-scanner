@@ -215,7 +215,9 @@ func findDiscordServer(fullName string, defaultBranch string, repoStr string, fa
 	for _, invite := range matches {
 		if !regexp.MustCompile(`^https?://`).MatchString(invite) {
 			invite = "https://" + invite
-		} status, err := MakeHeadRequest(invite) if err == nil && status != 404 {
+		}
+		status, err := MakeHeadRequest(invite)
+		if err == nil && status != 404 {
 			return invite, nil
 		}
 	}
