@@ -12,6 +12,7 @@ var repos = make(map[string]bool)
 
 const reposPerPage int = 100
 
+// TODO: double check that starting at page 0 is right, pretty sure should be starting at 1
 // Fetch all repos based on a search
 func fetchBySearch(name string, url string) {
 	var attempts int = RetryAttempts
@@ -30,7 +31,7 @@ func fetchBySearch(name string, url string) {
 		}
 
 		fmt.Printf("\t")
-		SleepIfRateLimited(Search)
+		SleepIfRateLimited(Search, false)
 		fmt.Printf("\t\tFetching Page %v -> ", page)
 		bytes, err := MakeGetRequest(fmt.Sprintf("%s%v", url, page))
 		if err != nil {
@@ -105,7 +106,7 @@ func fetchByForkOfTemplate() {
 			os.Exit(1)
 		}
 		fmt.Printf("\t")
-		SleepIfRateLimited(Search)
+		SleepIfRateLimited(Search, false)
 		fmt.Printf("\t\tFetching Page %v -> ", page)
 		bytes, err := MakeGetRequest(fmt.Sprintf("%s%v", url, page))
 		if err != nil {

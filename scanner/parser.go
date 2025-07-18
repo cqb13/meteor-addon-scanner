@@ -137,7 +137,7 @@ func getReleaseDetails(fullName string) (string, int, error) {
 			break
 		}
 
-		SleepIfRateLimited(Core)
+		SleepIfRateLimited(Core, true)
 
 		bytes, err := MakeGetRequest(fmt.Sprintf("%v%v", url, page))
 		if err != nil {
@@ -230,8 +230,18 @@ func splitCamelCase(input string) string {
 	return re.ReplaceAllString(input, "$1 $2")
 }
 
+func detectVariable(source string, pattern string) string {
+	re := regexp.MustCompile(pattern)
+	match := re.FindStringSubmatch(source)
+	if len(match) >= 2 {
+		return match[1]
+	}
+	return "" // fallback to default pattern
+}
+
 func findFeatures(fullName string, defaultBranch string, entrypoint string) (Features, error) {
-	url := fmt.Sprintf("https://raw.githubusercontent.com/%v/%v/src/main/java/%v.java", fullName, defaultBranch, strings.ReplaceAll(entrypoint, ".", "/"))
+	url := fmt.Sprintf("https://raw.githubusercontent.com/%v/%v/src/main/java/%v.java",
+		fullName, defaultBranch, strings.ReplaceAll(entrypoint, ".", "/"))
 	bytes, err := MakeGetRequest(url)
 	if err != nil {
 		return Features{}, err
@@ -239,17 +249,32 @@ func findFeatures(fullName string, defaultBranch string, entrypoint string) (Fea
 
 	source := string(bytes)
 
-	moduleRegex := regexp.MustCompile(`Modules\.get\(\)\.add\(new (\w+)\(\)\)`)
-	hudRegex := regexp.MustCompile(`Hud\.get\(\)\.register\((\w+)\.INFO\)`)
-	commandRegex := regexp.MustCompile(`Commands\.add\(new (\w+)\(\)\)`)
+	// Detect Module and HUD variable names. Why are people so extra and do this? I'm looking at you, rejects.
+	moduleVar := detectVariable(source, `(?m)\bModules\s+(\w+)\s*=\s*(Modules\.get\(\)|Systems\.get\(Modules\.class\));`)
+	hudVar := detectVariable(source, `(?m)\bHud\s+(\w+)\s*=\s*(Hud\.get\(\)|Systems\.get\(Hud\.class\));`)
+
+	modulePattern := `(?m)(Modules\.get\(\)|Systems\.get\(Modules\.class\)`
+	hudPattern := `(?m)(Hud\.get\(\)|Systems\.get\(Hud\.class\)`
+	if moduleVar != "" {
+		modulePattern += `|` + regexp.QuoteMeta(moduleVar)
+	}
+	if hudVar != "" {
+		hudPattern += `|` + regexp.QuoteMeta(hudVar)
+	}
+	modulePattern += `)\.add\(new (\w+)\(\)\);`
+	hudPattern += `)\.register\((\w+)\.INFO\);`
+
+	moduleRegex := regexp.MustCompile(modulePattern)
+	hudRegex := regexp.MustCompile(hudPattern)
+	commandRegex := regexp.MustCompile(`(?m)Commands\.add\(new (\w+)\(\)\);`)
 
 	var modules, hudElements, commands []string
 
 	for _, match := range moduleRegex.FindAllStringSubmatch(source, -1) {
-		modules = append(modules, splitCamelCase(match[1]))
+		modules = append(modules, splitCamelCase(match[2]))
 	}
 	for _, match := range hudRegex.FindAllStringSubmatch(source, -1) {
-		hudElements = append(hudElements, splitCamelCase(match[1]))
+		hudElements = append(hudElements, splitCamelCase(match[2]))
 	}
 	for _, match := range commandRegex.FindAllStringSubmatch(source, -1) {
 		commands = append(commands, splitCamelCase(match[1]))
@@ -283,7 +308,7 @@ func findVersion(fullName string, defaultBranch string) (string, error) {
 func parseRepo(fullName string, number int, total int) (*Addon, error) {
 	fmt.Printf("\tParsing %v, %v/%v\n", fullName, number, total)
 	fmt.Printf("\t")
-	SleepIfRateLimited(Core)
+	SleepIfRateLimited(Core, false)
 	repo, repoStr, err := getRepo(fullName)
 	if err != nil {
 		return nil, err

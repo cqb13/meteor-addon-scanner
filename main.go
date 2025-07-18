@@ -107,12 +107,15 @@ func main() {
 		switch result {
 		case scanner.Valid:
 			fmt.Printf("Is valid\n")
+			continue
 		case scanner.InvalidChildTooOld:
 			fmt.Printf("Repo has not been updated in 6 months -> no longer verified\n")
 			addon.Verified = false
+			continue
 		case scanner.InvalidParentTooRecent:
 			fmt.Printf("Parent repo was updated within 6 months of the fork -> no longer verified\n")
 			addon.Verified = false
+			continue
 		}
 	}
 

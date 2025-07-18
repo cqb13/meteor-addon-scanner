@@ -24,7 +24,7 @@ func (r RateLimit) String() string {
 	}
 }
 
-func SleepIfRateLimited(kind RateLimit) error {
+func SleepIfRateLimited(kind RateLimit, quiet bool) error {
 	bytes, err := MakeGetRequest("https://api.github.com/rate_limit")
 	if err != nil {
 		return err
@@ -62,7 +62,7 @@ func SleepIfRateLimited(kind RateLimit) error {
 		reset = result.Resources.Search.Reset
 	}
 
-	if remaining > 0 {
+	if remaining > 0 && !quiet {
 		fmt.Printf("\t[rate limit] %v requests remaining for %v\n", remaining, kind.String())
 		return nil
 	}
