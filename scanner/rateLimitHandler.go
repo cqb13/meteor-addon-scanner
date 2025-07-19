@@ -62,8 +62,10 @@ func SleepIfRateLimited(kind RateLimit, quiet bool) error {
 		reset = result.Resources.Search.Reset
 	}
 
-	if remaining > 0 && !quiet {
-		fmt.Printf("\t[rate limit] %v requests remaining for %v\n", remaining, kind.String())
+	if remaining > 0 {
+		if !quiet {
+			fmt.Printf("\t[rate limit] %v requests remaining for %v\n", remaining, kind.String())
+		}
 		return nil
 	}
 
