@@ -1,0 +1,44 @@
+name: scan
+
+concurrency:
+  group: "main"
+  cancel-in-progress: false
+
+on:
+  push:
+    paths:
+      - "verified.txt"
+      - ".github/workflows/addons.yml"
+      - "**/*.go"
+  schedule:
+    - cron: "0 21 * * *" # runs at 4pm est
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+
+      - name: Install Go dependencies
+        run: go mod tidy
+
+      - name: Run Go program
+        run: go run . verified.txt addons.json
+        env:
+          KEY: ${{ secrets.KEY }}
+
+      - name: Commit updated addons.json
+        run: |
+          git config user.name "cqb13"
+          git config user.email "null"
+          git add addons.json
+          git commit -m 'updated addons' || echo
+          git push --force
