@@ -57,10 +57,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	err = godotenv.Load()
-	if err != nil {
-		fmt.Println("Failed to load env file: ", err)
-		os.Exit(1)
+	if _, err := os.Stat(".env"); err == nil {
+		err = godotenv.Load()
+		if err != nil {
+			fmt.Println("Failed to load env file:", err)
+			os.Exit(1)
+		}
+	} else {
+		fmt.Println(".env file not found, assuming environment variable is set externally")
 	}
 
 	var key string = os.Getenv("KEY")
