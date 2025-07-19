@@ -30,6 +30,9 @@ jobs:
       - name: Install Go dependencies
         run: go mod tidy
 
+      - name: Remove old addons.json
+        run: rm -f addons.json
+
       - name: Run Go program
         run: go run . verified.txt addons.json
         env:
