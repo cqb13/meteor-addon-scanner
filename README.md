@@ -65,21 +65,15 @@ scanner verified.txt addons.json
 
 The scanner automatically pulls info from GitHub, but it might not always be accurate or exactly how you want it. To fix or customize that data, you can manually add your own values.
 
-To do that, open your `fabric.mod.json` file and add a `meteor_addon_list` section inside the `custom` field like this:
+To do that, create the file `meteor-addon-list.json` in the root directory of your addon, and add the fields you wish to overide:
 
 ```json
 {
-  "custom": {
-    // other custom fields...
-    "meteor_addon_list": {
-      "description": "A short description of your addon.",
-      "supported_versions": ["1.21.7", "1.21.8"],
-      "icon": "https://example.com/icon.png",
-      "discord": "https://discord.gg/yourserver",
-      "homepage": "https://example.com"
-    }
-    // other custom fields...
-  }
+  "description": "A short description of your addon.",
+  "supported_versions": ["1.21.7", "1.21.8"],
+  "icon": "https://example.com/icon.png",
+  "discord": "https://discord.gg/yourserver",
+  "homepage": "https://example.com"
 }
 ```
 

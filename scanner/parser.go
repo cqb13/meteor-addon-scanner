@@ -87,9 +87,6 @@ type fabric struct {
 	Entrypoints struct {
 		Meteor []string `json:"meteor"`
 	} `json:"entrypoints"`
-	Custom struct {
-		MeteorAddonList Custom `json:"meteor_addon_list"`
-	} `json:"custom"`
 }
 
 type release struct {
@@ -132,6 +129,28 @@ func getFabricModJson(fullName string, defaultBranch string) (*fabric, string, e
 	}
 
 	return &fabricModJson, string(bytes), nil
+}
+
+func getCustomProperties(fullName string, defaultBranch string) (*Custom, error) {
+	url := fmt.Sprintf("https://raw.githubusercontent.com/%v/%v/meteor-addon-list.json", fullName, defaultBranch)
+
+	bytes, err := MakeGetRequest(url)
+	if err != nil {
+		return nil, err
+	}
+
+	var customData Custom
+
+	if string(bytes) == "404: Not Found" {
+		return &customData, nil
+	}
+
+	err = json.Unmarshal(bytes, &customData)
+	if err != nil {
+		return nil, err
+	}
+
+	return &customData, nil
 }
 
 // https://api.github.com/repos/{name}/releases
@@ -385,6 +404,11 @@ func parseRepo(fullName string, number int, total int) (*Addon, error) {
 		site = ""
 	}
 
+	customProperties, err := getCustomProperties(fullName, repo.DefaultBranch)
+	if err != nil {
+		return nil, err
+	}
+
 	addon := Addon{
 		Name:        fabricModJson.Name,
 		Description: fabricModJson.Description,
@@ -410,7 +434,7 @@ func parseRepo(fullName string, number int, total int) (*Addon, error) {
 			Icon:     icon,
 			Homepage: site,
 		},
-		Custom: fabricModJson.Custom.MeteorAddonList,
+		Custom: *customProperties,
 	}
 
 	fmt.Printf("\tFinished Parsing %v, %v/%v\n", fullName, number, total)
