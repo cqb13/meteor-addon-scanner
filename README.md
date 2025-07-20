@@ -13,7 +13,7 @@ Check out the [Meteor Addon List](https://www.meteoraddons.com)
 3. Run the following command
 
 ```bash
-scanner anticope-verified.txt addons.json
+scanner verified.txt addons.json
 ```
 
 ## Output
@@ -49,9 +49,38 @@ scanner anticope-verified.txt addons.json
       "discord": "string",
       "homepage": "string",
       "icon": "string"
+    },
+    "custom": {
+      "description": "string",
+      "supported_versions": ["x.x.x", "x.x.x"],
+      "icon": "string",
+      "discord": "string",
+      "homepage": "string"
     }
   }
 ]
+```
+
+## Custom Properties
+
+The scanner automatically pulls info from GitHub, but it might not always be accurate or exactly how you want it. To fix or customize that data, you can manually add your own values.
+
+To do that, open your `fabric.mod.json` file and add a `meteor_addon_list` section inside the `custom` field like this:
+
+```json
+{
+  "custom": {
+    // other custom fields...
+    "meteor_addon_list": {
+      "description": "A short description of your addon.",
+      "supported_versions": ["1.21.7", "1.21.8"],
+      "icon": "https://example.com/icon.png",
+      "discord": "https://discord.gg/yourserver",
+      "homepage": "https://example.com"
+    }
+    // other custom fields...
+  }
+}
 ```
 
 _This tool is based on [AntiCope](https://github.com/AntiCope/anticope.ml)_

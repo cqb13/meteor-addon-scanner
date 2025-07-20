@@ -16,6 +16,15 @@ type Addon struct {
 	Verified    bool     `json:"verified"`
 	Repo        Repo     `json:"repo"`
 	Links       Links    `json:"links"`
+	Custom      Custom   `json:"custom"`
+}
+
+type Custom struct {
+	Description       string   `json:"description"`
+	SupportedVersions []string `json:"supported_versions"`
+	Icon              string   `json:"icon"`
+	Discord           string   `json:"discord"`
+	Homepage          string   `json:"Homepage"`
 }
 
 type Features struct {
@@ -78,6 +87,9 @@ type fabric struct {
 	Entrypoints struct {
 		Meteor []string `json:"meteor"`
 	} `json:"entrypoints"`
+	Custom struct {
+		MeteorAddonList Custom `json:"meteor_addon_list"`
+	} `json:"custom"`
 }
 
 type release struct {
@@ -398,6 +410,7 @@ func parseRepo(fullName string, number int, total int) (*Addon, error) {
 			Icon:     icon,
 			Homepage: site,
 		},
+		Custom: fabricModJson.Custom.MeteorAddonList,
 	}
 
 	fmt.Printf("\tFinished Parsing %v, %v/%v\n", fullName, number, total)
