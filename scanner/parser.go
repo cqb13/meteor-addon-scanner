@@ -54,13 +54,11 @@ type Links struct {
 	Icon     string `json:"icon"`
 }
 
-// matches patterns like `add(new SomeFeatureName(...))`
-// and captures the feature name (e.g., "SomeFeatureName")
-var featureRegex = regexp.MustCompile(`(?:add\(new )([^(]+)(?:\([^)]*)\)\)`)
-
 // matches Discord invite links, supporting various domains
 // and formats (e.g., "https://discord.gg/abc123", "discord.com/invite/abc")
 var inviteRegex = regexp.MustCompile(`((?:https?:\/\/)?(?:www\.)?(?:discord\.(?:gg|io|me|li|com)|discordapp\.com/invite|dsc\.gg)/[a-zA-Z0-9\-\/]+)`)
+
+var mcVersionRegex = regexp.MustCompile(`^1\.\d+(\.\d+)?$`)
 
 type repository struct {
 	FullName      string `json:"full_name"`
@@ -149,6 +147,16 @@ func getCustomProperties(fullName string, defaultBranch string) (*Custom, error)
 	if err != nil {
 		return nil, err
 	}
+
+	// Validate all supported versions
+	validVersions := make([]string, 0, len(customData.SupportedVersions))
+	for _, v := range customData.SupportedVersions {
+		v = strings.TrimSpace(v)
+		if mcVersionRegex.MatchString(v) {
+			validVersions = append(validVersions, v)
+		}
+	}
+	customData.SupportedVersions = validVersions
 
 	return &customData, nil
 }
