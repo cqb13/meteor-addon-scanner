@@ -70,6 +70,20 @@ To do that, create the file `meteor-addon-list.json` in the root directory of yo
 ```json
 {
   "description": "A short description of your addon.",
+  "tags": [
+    "PvP",
+    "Utility",
+    "Theme",
+    "Render",
+    "Movement",
+    "Building",
+    "World",
+    "Misc",
+    "QoL",
+    "Exploit",
+    "Fun",
+    "Automation"
+  ],
   "supported_versions": ["1.21.7", "1.21.8"],
   "icon": "https://example.com/icon.png",
   "discord": "https://discord.gg/yourserver",

@@ -7,6 +7,69 @@ import (
 	"strings"
 )
 
+type Tag int
+
+const (
+	PvP Tag = iota
+	Utility
+	Theme
+	Render
+	Movement
+	Building
+	World
+	Misc
+	QoL
+	Exploit
+	Fun
+	Automation
+)
+
+func (t Tag) String() string {
+	switch t {
+	case PvP:
+		return "PvP"
+	case Utility:
+		return "Utility"
+	case Theme:
+		return "Theme"
+	case Render:
+		return "Render"
+	case Movement:
+		return "Movement"
+	case Building:
+		return "Building"
+	case World:
+		return "World"
+	case Misc:
+		return "Misc"
+	case QoL:
+		return "QoL"
+	case Exploit:
+		return "Exploit"
+	case Fun:
+		return "Fun"
+	case Automation:
+		return "Automation"
+	default:
+		return "Unknown"
+	}
+}
+
+var validTags = map[string]Tag{
+	"pvp":        PvP,
+	"utility":    Utility,
+	"theme":      Theme,
+	"render":     Render,
+	"movement":   Movement,
+	"building":   Building,
+	"world":      World,
+	"misc":       Misc,
+	"qol":        QoL,
+	"exploit":    Exploit,
+	"fun":        Fun,
+	"automation": Automation,
+}
+
 type Addon struct {
 	Name        string   `json:"name"`
 	Description string   `json:"description"`
@@ -21,6 +84,7 @@ type Addon struct {
 
 type Custom struct {
 	Description       string   `json:"description"`
+	Tags              []string `json:"tags"`
 	SupportedVersions []string `json:"supported_versions"`
 	Icon              string   `json:"icon"`
 	Discord           string   `json:"discord"`
@@ -95,6 +159,11 @@ type release struct {
 	} `json:"assets"`
 }
 
+func validTag(tag string) (bool, string) {
+	realTag, exists := validTags[strings.ToLower(tag)]
+	return exists, realTag.String()
+}
+
 func getRepo(fullName string) (*repository, string, error) {
 	url := fmt.Sprintf("https://api.github.com/repos/%v", fullName)
 	bytes, err := MakeGetRequest(url)
@@ -157,6 +226,18 @@ func getCustomProperties(fullName string, defaultBranch string) (*Custom, error)
 		}
 	}
 	customData.SupportedVersions = validVersions
+
+	var validTags []string
+
+	for _, tag := range customData.Tags {
+		exists, realTag := validTag(tag)
+
+		if exists {
+			validTags = append(validTags, realTag)
+		}
+	}
+
+	customData.Tags = validTags
 
 	return &customData, nil
 }
