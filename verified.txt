@@ -30,3 +30,5 @@ realnnpg/glazed
 H1ggsK/BlackOut
 asteroide-development/Asteroide
 noramibu/Nora-Tweaks
+Eglijohn/brew-addon
+Hybridious/hybridious_mod
