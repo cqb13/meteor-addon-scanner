@@ -31,5 +31,4 @@ H1ggsK/BlackOut
 asteroide-development/Asteroide
 noramibu/Nora-Tweaks
 Eglijohn/brew-addon
-Julflips/nerv-printer-addon
 RacoonDog/SuperUser-Addon
