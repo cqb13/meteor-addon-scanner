@@ -32,3 +32,4 @@ asteroide-development/Asteroide
 noramibu/Nora-Tweaks
 Eglijohn/brew-addon
 RacoonDog/SuperUser-Addon
+cqb13/mc-games
