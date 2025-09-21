@@ -12,13 +12,11 @@ var repos = make(map[string]bool)
 
 const reposPerPage int = 100
 
-// TODO: double check that starting at page 0 is right, pretty sure should be starting at 1
-// Fetch all repos based on a search
 func fetchBySearch(name string, url string) {
 	var attempts int = RetryAttempts
 
 	var complete bool = false
-	var page int = 0
+	var page int = 1
 	fmt.Printf("\tFetching based on %v\n", name)
 	for {
 		if complete == true {
@@ -67,7 +65,7 @@ func fetchBySearch(name string, url string) {
 		fmt.Printf("Found %v Repositories\n", reposOnPage)
 
 		for _, repo := range result.Items {
-			_, ok := repos[repo.Repository.FullName]
+			_, ok := repos[strings.ToLower(repo.Repository.FullName)]
 
 			if !repo.Repository.Private && !ok && !strings.HasSuffix(strings.ToLower(repo.Repository.FullName), "-addon-template") {
 				repos[repo.Repository.FullName] = false
@@ -94,7 +92,7 @@ func fetchByForkOfTemplate() {
 	url := fmt.Sprintf("https://api.github.com/repos/MeteorDevelopment/meteor-addon-template/forks?per_page=%v&page=", reposPerPage)
 
 	var complete bool = false
-	var page int = 0
+	var page int = 1
 	fmt.Printf("\tFetching fokrs of template\n")
 	for {
 		if complete == true {
@@ -138,7 +136,7 @@ func fetchByForkOfTemplate() {
 		fmt.Printf("Found %v Repositories\n", reposOnPage)
 
 		for _, repo := range result {
-			_, ok := repos[repo.FullName]
+			_, ok := repos[strings.ToLower(repo.FullName)]
 
 			if !repo.Private && !ok && !strings.HasSuffix(strings.ToLower(repo.FullName), "-addon-template") {
 				repos[repo.FullName] = false

@@ -56,7 +56,6 @@ func SleepIfRateLimited(kind RateLimit, quiet bool) error {
 	case Core:
 		remaining = result.Resources.Core.Remaining
 		reset = result.Resources.Core.Reset
-		break
 	case Search:
 		remaining = result.Resources.Search.Remaining
 		reset = result.Resources.Search.Reset
