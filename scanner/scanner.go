@@ -159,7 +159,7 @@ func fetchByForkOfTemplate() {
 
 func Locate(verifiedAddons []string) map[string]bool {
 	for _, addon := range verifiedAddons {
-		repos[addon] = true
+		repos[strings.ToLower(addon)] = true
 	}
 
 	url := fmt.Sprintf("https://api.github.com/search/code?q=entrypoints+meteor+extension:json+filename:fabric.mod.json+fork:true+in:file&per_page=%v&page=", reposPerPage)
