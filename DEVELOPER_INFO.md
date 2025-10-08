@@ -29,7 +29,7 @@ Once verified, your addon must continue to meet the following requirements to re
   - Collects or sends private data (e.g, coordinates, IPs, messages) without clear consent
   - _Cosmetic features (e.g., user-specific capes or badges) are allowed, as long as they are purely visual and do not affect gameplay or performance_
 - Addons should not cause severe performance issues or crashes
-- Addons should be maintained to remain compatible with current Meteor Client and Minecraft versions.
+- Addons should be maintained to remain compatible with current Meteor Client and Minecraft versions
   - _Addons abandoned for extended periods may lose verified status_
 
 # Policy Violations & Consequences
@@ -40,8 +40,8 @@ The addon will be unverified until changes are made to comply with policies. If 
 
 ## Second Offense
 
-The addon will be permanently unverified and will not be eligible for re-verification in the future
+The addon will be permanently unverified and will not be eligible for re-verification in the future.
 
 ## Appeals and Re-Verification
 
-Developers may appeal a verification decision by contracting **cqb13** on discord.
+Developers may appeal a verification decision by contacting **cqb13** on discord.
