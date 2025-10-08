@@ -28,7 +28,6 @@ MeteorDevelopment/meteor-addon-template
 X-C-0/Catpuccin-Addon
 realnnpg/Glazed
 H1ggsK/BlackOut
-asteroide-development/Asteroide
 noramibu/Nora-Tweaks
 Eglijohn/brew-addon
 RacoonDog/SuperUser-Addon
