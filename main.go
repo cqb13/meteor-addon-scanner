@@ -12,25 +12,33 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func validatePaths(verifiedAddons string, output string) error {
-	if !strings.HasSuffix(verifiedAddons, ".txt") {
-		return fmt.Errorf("Verified addons path must lead to a txt file")
+func validateInputPath(input string) error {
+	if input == "--" {
+		return nil
 	}
 
+	if !strings.HasSuffix(input, ".txt") {
+		return fmt.Errorf("Path must lead to a txt file")
+	}
+
+	if _, err := filepath.Abs(input); err != nil {
+		return fmt.Errorf("'%v' is not a valid path: %v", input, err)
+	}
+
+	if _, err := os.Stat(input); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("Failed to read stats for '%v'", input)
+	}
+
+	return nil
+}
+
+func validateOutputPath(output string) error {
 	if !strings.HasSuffix(output, ".json") {
 		return fmt.Errorf("Output path must lead to a json file")
 	}
 
-	if _, err := filepath.Abs(verifiedAddons); err != nil {
-		return fmt.Errorf("'%v' is not a valid path: %v", verifiedAddons, err)
-	}
-
 	if _, err := filepath.Abs(output); err != nil {
 		return fmt.Errorf("'%v' is not a valid path: %v", output, err)
-	}
-
-	if _, err := os.Stat(verifiedAddons); err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("Failed to read stats for '%v'", verifiedAddons)
 	}
 
 	if _, err := os.Stat(output); err == nil {
@@ -40,28 +48,68 @@ func validatePaths(verifiedAddons string, output string) error {
 	return nil
 }
 
+func loadRepoList(path string) ([]string, error) {
+	if path == "--" {
+		return make([]string, 0), nil
+	}
+
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to load repo list: %v\n", err)
+	}
+	defer file.Close()
+
+	bytes, err := io.ReadAll(file)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to read repo list: %v\n", err)
+	}
+
+	var repos []string
+
+	for line := range strings.SplitSeq(string(bytes), "\n") {
+		if line != "" {
+			repos = append(repos, strings.TrimSpace(line))
+		}
+	}
+
+	return repos, nil
+}
+
 func main() {
 	args := os.Args
 
-	if len(args) < 3 {
+	if len(args) < 4 {
 		fmt.Println("Not enough argument provided: verified-addons.txt output.json")
-		os.Exit(1)
+		return
 	}
 
 	verifiedAddonsPath := args[1]
-	outputPath := args[2]
+	blackListedAddonsPath := args[2]
+	outputPath := args[3]
 
-	err := validatePaths(verifiedAddonsPath, outputPath)
+	err := validateInputPath(verifiedAddonsPath)
+	if err != nil {
+		fmt.Printf("Verified: %s\n", err)
+		return
+	}
+
+	err = validateInputPath(blackListedAddonsPath)
+	if err != nil {
+		fmt.Printf("Black-listed: %s\n", err)
+		return
+	}
+
+	err = validateOutputPath(outputPath)
 	if err != nil {
 		fmt.Println(err)
-		os.Exit(1)
+		return
 	}
 
 	if _, err := os.Stat(".env"); err == nil {
 		err = godotenv.Load()
 		if err != nil {
 			fmt.Println("Failed to load env file:", err)
-			os.Exit(1)
+			return
 		}
 	} else {
 		fmt.Println(".env file not found, assuming environment variable is set externally")
@@ -70,28 +118,33 @@ func main() {
 	var key string = os.Getenv("KEY")
 	scanner.InitDefaultHeaders(key)
 
-	file, err := os.Open(verifiedAddonsPath)
+	verifiedAddons, err := loadRepoList(verifiedAddonsPath)
 	if err != nil {
-		fmt.Printf("Failed to load verified addons: %v\n", err)
-	}
-	defer file.Close()
-
-	bytes, err := io.ReadAll(file)
-	if err != nil {
-		fmt.Printf("Failed to read verified addons: %v\n", err)
+		fmt.Printf("Verified: %s\n", err)
+		return
 	}
 
-	var verifiedAddons []string
-
-	for line := range strings.SplitSeq(string(bytes), "\n") {
-		if line != "" {
-			verifiedAddons = append(verifiedAddons, strings.TrimSpace(line))
-		}
+	blackListedAddons, err := loadRepoList(blackListedAddonsPath)
+	if err != nil {
+		fmt.Printf("Black-listed: %s\n", err)
+		return
 	}
 
 	fmt.Println("Locating Repositories")
 	repos := scanner.Locate(verifiedAddons)
 	fmt.Printf("Located %v repos\n", len(repos))
+
+	removed := 0
+	for _, repo := range blackListedAddons {
+		_, ok := repos[repo]
+		if ok {
+			delete(repos, repo)
+			removed++
+		}
+	}
+
+	fmt.Printf("Removed %d/%d black listed repositories\n", removed, len(blackListedAddons))
+
 	fmt.Println("Parsing Repositories")
 	addons := scanner.ParseRepos(repos)
 
@@ -129,7 +182,7 @@ func main() {
 		return
 	}
 
-	file, err = os.Create(outputPath)
+	file, err := os.Create(outputPath)
 	if err != nil {
 		fmt.Printf("Failed to create output file: %v\b", err)
 		return

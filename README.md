@@ -9,11 +9,12 @@ Check out the [Meteor Addon List](https://www.meteoraddons.com)
 ## Usage
 
 1. Create a **.env** file with a value **KEY** with a github API key with read access to public repositories
-2. Create a text file with full names of github repositories separated by new lines
+2. Create a text file with full names of github repositories separated by new lines, for verified and black-listed addons
+   - Both verified and black-list files are optional, replace the path with -- to not use them
 3. Run the following command
 
 ```bash
-scanner verified.txt addons.json
+scanner verified.txt black-listed.txt addons.json
 ```
 
 ## Output
