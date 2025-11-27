@@ -33,3 +33,4 @@ Eglijohn/brew-addon
 RacoonDog/SuperUser-Addon
 cqb13/mc-games
 JuusK/MeteorExtras
+Julflips/nerv-printer-addon
