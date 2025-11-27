@@ -454,7 +454,7 @@ func findVersionInGradleCatalog(fullName string, defaultBranch string) (string, 
 	return version, nil
 }
 
-func ParseRepo(fullName string) (*Addon, error) {
+func parseRepo(fullName string) (*Addon, error) {
 	SleepIfRateLimited(Core, true)
 	repo, repoStr, err := getRepo(fullName)
 	if err != nil {
