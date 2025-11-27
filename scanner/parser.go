@@ -420,13 +420,41 @@ func findVersion(fullName string, defaultBranch string) (string, error) {
 	for line := range strings.SplitSeq(string(bytes), "\n") {
 		if strings.HasPrefix(line, "minecraft_version=") {
 			version = strings.TrimSpace(strings.Replace(line, "minecraft_version=", "", 1))
+			break
+		}
+	}
+
+	if version == "" {
+		version, err = findVersionInGradleCatalog(fullName, defaultBranch)
+		if err != nil {
+			return "", err
 		}
 	}
 
 	return version, nil
 }
 
-func parseRepo(fullName string) (*Addon, error) {
+func findVersionInGradleCatalog(fullName string, defaultBranch string) (string, error) {
+	url := fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/gradle/libs.versions.toml", fullName, defaultBranch)
+
+	bytes, err := MakeGetRequest(url)
+	if err != nil {
+		return "", err
+	}
+
+	var version string = ""
+	for line := range strings.SplitSeq(string(bytes), "\n") {
+		if strings.HasPrefix(line, "minecraft = ") {
+			version = strings.TrimSpace(strings.Replace(line, "minecraft = ", "", 1))
+			version = strings.ReplaceAll(version, "\"", "")
+			break
+		}
+	}
+
+	return version, nil
+}
+
+func ParseRepo(fullName string) (*Addon, error) {
 	SleepIfRateLimited(Core, true)
 	repo, repoStr, err := getRepo(fullName)
 	if err != nil {
@@ -549,7 +577,7 @@ func ParseRepos(repos map[string]bool) []*Addon {
 		go func(id int) {
 			defer wg.Done()
 			for job := range jobChan {
-				addon, err := parseRepo(job.FullName)
+				addon, err := ParseRepo(job.FullName)
 				if err != nil {
 					errorChan <- fmt.Errorf("Failed parsing %s: %v", job.FullName, err)
 					continue
