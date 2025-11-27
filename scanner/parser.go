@@ -577,7 +577,7 @@ func ParseRepos(repos map[string]bool) []*Addon {
 		go func(id int) {
 			defer wg.Done()
 			for job := range jobChan {
-				addon, err := ParseRepo(job.FullName)
+				addon, err := parseRepo(job.FullName)
 				if err != nil {
 					errorChan <- fmt.Errorf("Failed parsing %s: %v", job.FullName, err)
 					continue
