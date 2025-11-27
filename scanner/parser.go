@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"sync"
+	"time"
 )
 
 type Tag int
@@ -188,6 +190,10 @@ func getFabricModJson(fullName string, defaultBranch string) (*fabric, string, e
 		return nil, "", err
 	}
 
+	if string(bytes) == "404: Not Found" {
+		return nil, "", fmt.Errorf("fabric.mod.json not found in expected location")
+	}
+
 	var fabricModJson fabric
 
 	err = json.Unmarshal(bytes, &fabricModJson)
@@ -297,10 +303,6 @@ func getReleaseDetails(fullName string) (string, int, error) {
 		page += 1
 	}
 
-	if downloadUrl == "" {
-		fmt.Println("\t\tMissing release")
-	}
-
 	return downloadUrl, downloadCount, nil
 }
 
@@ -312,7 +314,6 @@ func getIcon(fullName string, defaultBranch string, icon string) (string, error)
 	}
 
 	if string(bytes) == "404: Not Found" {
-		fmt.Println("\t\tMissing icon")
 		return "", nil
 	}
 
@@ -425,10 +426,8 @@ func findVersion(fullName string, defaultBranch string) (string, error) {
 	return version, nil
 }
 
-func parseRepo(fullName string, number int, total int) (*Addon, error) {
-	fmt.Printf("\tParsing %v, %v/%v\n", fullName, number, total)
-	fmt.Printf("\t")
-	SleepIfRateLimited(Core, false)
+func parseRepo(fullName string) (*Addon, error) {
+	SleepIfRateLimited(Core, true)
 	repo, repoStr, err := getRepo(fullName)
 	if err != nil {
 		return nil, err
@@ -448,9 +447,6 @@ func parseRepo(fullName string, number int, total int) (*Addon, error) {
 	description := repo.Description
 	if description == "" {
 		description = fabricModJson.Description
-	}
-	if description == "" {
-		fmt.Println("\t\tMissing description")
 	}
 
 	// find authors from fabric.mod.json or from github username
@@ -526,31 +522,81 @@ func parseRepo(fullName string, number int, total int) (*Addon, error) {
 		Custom: *customProperties,
 	}
 
-	fmt.Printf("\tFinished Parsing %v, %v/%v\n", fullName, number, total)
 	return &addon, nil
 }
 
 func ParseRepos(repos map[string]bool) []*Addon {
-	var total int = len(repos)
-	var addons []*Addon
+	start := time.Now()
 
-	var addonNum = 1
-	for key, value := range repos {
-		addon, err := parseRepo(key, addonNum, total)
+	total := len(repos)
+	addons := make([]*Addon, 0, total)
 
-		if err != nil {
-			fmt.Printf("\tFailed to parse %v: %v\n", key, err)
-			addonNum++
-			continue
-		}
-
-		addon.Verified = value
-
-		addons = append(addons, addon)
-		addonNum++
+	type Job struct {
+		FullName string
+		Verified bool
+		Index    int
 	}
 
-	fmt.Printf("Found %v valid addons out of %v repositories\n", len(addons), len(repos))
+	jobChan := make(chan Job)
+	resultChan := make(chan *Addon)
+	errorChan := make(chan error)
+	var wg sync.WaitGroup
 
-	return addons
+	workerCount := 10
+
+	for i := range workerCount {
+		wg.Add(1)
+		go func(id int) {
+			defer wg.Done()
+			for job := range jobChan {
+				addon, err := parseRepo(job.FullName)
+				if err != nil {
+					errorChan <- fmt.Errorf("Failed parsing %s: %v", job.FullName, err)
+					continue
+				}
+				addon.Verified = job.Verified
+				resultChan <- addon
+			}
+		}(i)
+	}
+
+	go func() {
+		idx := 1
+		for fullName, verified := range repos {
+			jobChan <- Job{
+				FullName: fullName,
+				Verified: verified,
+				Index:    idx,
+			}
+			idx++
+		}
+		close(jobChan)
+	}()
+
+	go func() {
+		wg.Wait()
+		close(resultChan)
+		close(errorChan)
+	}()
+
+	for {
+		select {
+		case addon, ok := <-resultChan:
+			if !ok {
+				duration := time.Since(start)
+				fmt.Printf(
+					"Finished parsing in %s\n",
+					duration.String(),
+				)
+				return addons
+			}
+			addons = append(addons, addon)
+
+		case err, ok := <-errorChan:
+			if !ok {
+				continue
+			}
+			fmt.Printf("\t%s\n", err)
+		}
+	}
 }

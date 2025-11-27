@@ -147,6 +147,7 @@ func main() {
 
 	fmt.Println("Parsing Repositories")
 	addons := scanner.ParseRepos(repos)
+	fmt.Printf("Found %d/%d valid addons\n", len(addons), len(repos))
 
 	fmt.Println("Validating Forked Verified Addons")
 	for _, addon := range addons {

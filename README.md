@@ -66,7 +66,7 @@ scanner verified.txt black-listed.txt addons.json
 
 The scanner automatically pulls info from GitHub, but it might not always be accurate or exactly how you want it. To fix or customize that data, you can manually add your own values.
 
-To do that, create the file `meteor-addon-list.json` in the root directory of your addon, and add the fields you wish to overide:
+To do that, create the file `meteor-addon-list.json` in the root directory of your addon, and add the fields you wish to override:
 
 ```json
 {
