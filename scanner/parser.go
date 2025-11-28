@@ -113,11 +113,11 @@ type Repo struct {
 }
 
 type Links struct {
-	Github   string `json:"github"`
-	Download string `json:"download"`
-	Discord  string `json:"discord"`
-	Homepage string `json:"homepage"`
-	Icon     string `json:"icon"`
+	Github    string   `json:"github"`
+	Downloads []string `json:"downloads"`
+	Discord   string   `json:"discord"`
+	Homepage  string   `json:"homepage"`
+	Icon      string   `json:"icon"`
 }
 
 // matches Discord invite links, supporting various domains
@@ -249,11 +249,12 @@ func getCustomProperties(fullName string, defaultBranch string) (*Custom, error)
 }
 
 // https://api.github.com/repos/{name}/releases
-func getReleaseDetails(fullName string) (string, int, error) {
+func getReleaseDetails(fullName string) ([]string, int, error) {
 	url := fmt.Sprintf("https://api.github.com/repos/%v/releases?per_page=100&page=", fullName)
 
 	var downloadCount int = 0
-	var downloadUrl string = ""
+	downloads := make([]string, 0)
+	foundLatest := false
 
 	var complete bool = false
 	var page int = 1
@@ -267,14 +268,14 @@ func getReleaseDetails(fullName string) (string, int, error) {
 
 		bytes, err := MakeGetRequest(fmt.Sprintf("%v%v", url, page))
 		if err != nil {
-			return "", 0, err
+			return nil, 0, err
 		}
 
 		var releases []release
 
 		err = json.Unmarshal(bytes, &releases)
 		if err != nil {
-			return "", 0, err
+			return nil, 0, err
 		}
 
 		if len(releases) == 0 {
@@ -292,18 +293,19 @@ func getReleaseDetails(fullName string) (string, int, error) {
 
 				if strings.HasSuffix(name, ".jar") {
 					downloadCount += asset.Downloads
-					if downloadUrl == "" {
-						downloadUrl = asset.Url
+					if !foundLatest {
+						downloads = append(downloads, asset.Url)
 					}
-					break
 				}
 			}
+
+			foundLatest = true
 		}
 
 		page += 1
 	}
 
-	return downloadUrl, downloadCount, nil
+	return downloads, downloadCount, nil
 }
 
 func getIcon(fullName string, defaultBranch string, icon string) (string, error) {
@@ -454,7 +456,7 @@ func findVersionInGradleCatalog(fullName string, defaultBranch string) (string, 
 	return version, nil
 }
 
-func parseRepo(fullName string) (*Addon, error) {
+func ParseRepo(fullName string) (*Addon, error) {
 	SleepIfRateLimited(Core, true)
 	repo, repoStr, err := getRepo(fullName)
 	if err != nil {
@@ -485,7 +487,7 @@ func parseRepo(fullName string) (*Addon, error) {
 		authors = fabricModJson.Authors
 	}
 
-	downloadUrl, downloadCount, err := getReleaseDetails(fullName)
+	downloads, downloadCount, err := getReleaseDetails(fullName)
 	if err != nil {
 		return nil, err
 	}
@@ -541,11 +543,11 @@ func parseRepo(fullName string) (*Addon, error) {
 			CreationDate: repo.CreatedAt,
 		},
 		Links: Links{
-			Github:   repo.HtmlUrl,
-			Download: downloadUrl,
-			Discord:  invite,
-			Icon:     icon,
-			Homepage: site,
+			Github:    repo.HtmlUrl,
+			Downloads: downloads,
+			Discord:   invite,
+			Icon:      icon,
+			Homepage:  site,
 		},
 		Custom: *customProperties,
 	}
@@ -577,7 +579,7 @@ func ParseRepos(repos map[string]bool) []*Addon {
 		go func(id int) {
 			defer wg.Done()
 			for job := range jobChan {
-				addon, err := parseRepo(job.FullName)
+				addon, err := ParseRepo(job.FullName)
 				if err != nil {
 					errorChan <- fmt.Errorf("Failed parsing %s: %v", job.FullName, err)
 					continue

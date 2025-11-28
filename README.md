@@ -46,7 +46,7 @@ scanner verified.txt black-listed.txt addons.json
     },
     "links": {
       "github": "string",
-      "download": "string",
+      "downloads": ["asset-1", "asset-2"],
       "discord": "string",
       "homepage": "string",
       "icon": "string"
