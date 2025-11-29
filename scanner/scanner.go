@@ -45,10 +45,15 @@ func fetchBySearch(name string, url string) {
 
 		type githubPages struct {
 			Items []struct {
-				Repository struct {
+				// search/repositories
+				FullName string `json:"full_name"`
+				Private  bool   `json:"private"`
+
+				// search/code
+				Repository *struct {
 					FullName string `json:"full_name"`
 					Private  bool   `json:"private"`
-				}
+				} `json:"repository"`
 			} `json:"items"`
 		}
 
@@ -64,11 +69,31 @@ func fetchBySearch(name string, url string) {
 
 		fmt.Printf("Found %v Repositories\n", reposOnPage)
 
-		for _, repo := range result.Items {
-			_, ok := repos[strings.ToLower(repo.Repository.FullName)]
+		for _, item := range result.Items {
+			var full string
+			var priv bool
 
-			if !repo.Repository.Private && !ok && !strings.HasSuffix(strings.ToLower(repo.Repository.FullName), "-addon-template") {
-				repos[repo.Repository.FullName] = false
+			if item.Repository != nil {
+				// code search
+				full = item.Repository.FullName
+				priv = item.Repository.Private
+			} else {
+				// repo search
+				full = item.FullName
+				priv = item.Private
+			}
+
+			if full == "" {
+				// should never happen
+				continue
+			}
+
+			lower := strings.ToLower(full)
+
+			if !priv && !strings.HasSuffix(lower, "-addon-template") {
+				if _, ok := repos[lower]; !ok {
+					repos[lower] = false
+				}
 			}
 		}
 
@@ -166,6 +191,14 @@ func Locate(verifiedAddons []string) map[string]bool {
 	fetchBySearch("fabric.mod.json", url)
 	url = fmt.Sprintf("https://api.github.com/search/code?q=extends+MeteorAddon+language:java+in:file&per_page=%v&page=", reposPerPage)
 	fetchBySearch("Extend MeteorAddon", url)
+
+	url = fmt.Sprintf("https://api.github.com/search/repositories?q=topic:meteor-addon&per_page=%d&page=", reposPerPage)
+	fetchBySearch("meteor-addon topic", url)
+	url = fmt.Sprintf("https://api.github.com/search/repositories?q=topic:meteor-client-addon&per_page=%d&page=", reposPerPage)
+	fetchBySearch("meteor-client-addon topic", url)
+	url = fmt.Sprintf("https://api.github.com/search/repositories?q=meteor-addon+in:name,description&per_page=%d&page=", reposPerPage)
+	fetchBySearch("meteor-addon in name or description", url)
+
 	fetchByForkOfTemplate()
 
 	return repos
