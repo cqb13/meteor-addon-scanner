@@ -12,24 +12,48 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func validateInputPath(input string) error {
-	if input == "--" {
-		return nil
+type config struct {
+	BlacklistedRepos []string `json:"repo-blacklist"`
+	BlacklistedDevs  []string `json:"developer-blacklist"`
+	VerifiedAddons   []string `json:"verified"`
+}
+
+func validateConfigPath(path string) error {
+	if !strings.HasSuffix(path, ".json") {
+		return fmt.Errorf("Path must lead to a json file")
 	}
 
-	if !strings.HasSuffix(input, ".txt") {
-		return fmt.Errorf("Path must lead to a txt file")
+	if _, err := filepath.Abs(path); err != nil {
+		return fmt.Errorf("'%v' is not a valid path: %v", path, err)
 	}
 
-	if _, err := filepath.Abs(input); err != nil {
-		return fmt.Errorf("'%v' is not a valid path: %v", input, err)
-	}
-
-	if _, err := os.Stat(input); err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("Failed to read stats for '%v'", input)
+	if _, err := os.Stat(path); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("Failed to read stats for '%v'", path)
 	}
 
 	return nil
+}
+
+func loadConfig(path string) (*config, error) {
+	fp, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer fp.Close()
+
+	bytes, err := io.ReadAll(fp)
+	if err != nil {
+		return nil, err
+	}
+
+	var cfg config
+
+	err = json.Unmarshal(bytes, &cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return &cfg, nil
 }
 
 func validateOutputPath(output string) error {
@@ -48,58 +72,30 @@ func validateOutputPath(output string) error {
 	return nil
 }
 
-func loadRepoList(path string) ([]string, error) {
-	if path == "--" {
-		return make([]string, 0), nil
-	}
-
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to load repo list: %v\n", err)
-	}
-	defer file.Close()
-
-	bytes, err := io.ReadAll(file)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to read repo list: %v\n", err)
-	}
-
-	var repos []string
-
-	for line := range strings.SplitSeq(string(bytes), "\n") {
-		if line != "" {
-			repos = append(repos, strings.TrimSpace(line))
-		}
-	}
-
-	return repos, nil
-}
-
 func main() {
 	args := os.Args
 
-	if len(args) < 4 {
-		fmt.Println("Not enough argument provided: verified-addons.txt output.json")
+	if len(args) < 3 {
+		fmt.Println("Not enough argument provided: config.json output.json")
 		return
 	}
 
-	verifiedAddonsPath := args[1]
-	blackListedAddonsPath := args[2]
-	outputPath := args[3]
+	configPath := args[1]
+	outputPath := args[2]
 
-	err := validateInputPath(verifiedAddonsPath)
+	err := validateConfigPath(configPath)
 	if err != nil {
 		fmt.Printf("Verified: %s\n", err)
 		return
 	}
 
-	err = validateInputPath(blackListedAddonsPath)
+	err = validateOutputPath(outputPath)
 	if err != nil {
-		fmt.Printf("Black-listed: %s\n", err)
+		fmt.Println(err)
 		return
 	}
 
-	err = validateOutputPath(outputPath)
+	cfg, err := loadConfig(configPath)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -118,24 +114,12 @@ func main() {
 	var key string = os.Getenv("KEY")
 	scanner.InitDefaultHeaders(key)
 
-	verifiedAddons, err := loadRepoList(verifiedAddonsPath)
-	if err != nil {
-		fmt.Printf("Verified: %s\n", err)
-		return
-	}
-
-	blackListedAddons, err := loadRepoList(blackListedAddonsPath)
-	if err != nil {
-		fmt.Printf("Black-listed: %s\n", err)
-		return
-	}
-
 	fmt.Println("Locating Repositories")
-	repos := scanner.Locate(verifiedAddons)
+	repos := scanner.Locate(cfg.VerifiedAddons)
 	fmt.Printf("Located %v repos\n", len(repos))
 
 	removed := 0
-	for _, repo := range blackListedAddons {
+	for _, repo := range cfg.BlacklistedRepos {
 		lower := strings.ToLower(repo)
 
 		for fullName := range repos {
@@ -147,7 +131,19 @@ func main() {
 		}
 	}
 
-	fmt.Printf("Removed %d/%d black listed repositories\n", removed, len(blackListedAddons))
+	for _, dev := range cfg.BlacklistedDevs {
+		lower := strings.ToLower(dev)
+
+		for fullName := range repos {
+			if strings.HasPrefix(strings.ToLower(fullName), lower) {
+				delete(repos, fullName)
+				removed++
+				break
+			}
+		}
+	}
+
+	fmt.Printf("Removed %d black listed repositories\n", removed)
 
 	fmt.Println("Parsing Repositories")
 	addons := scanner.ParseRepos(repos)

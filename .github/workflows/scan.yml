@@ -34,7 +34,7 @@ jobs:
         run: rm -f addons.json
 
       - name: Run Go program
-        run: go run . verified.txt black-list.txt addons.json
+        run: go run . config.json addons.json
         env:
           KEY: ${{ secrets.KEY }}
 

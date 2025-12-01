@@ -1,3 +1,0 @@
-asteroide-development/Asteroide
-creed27-tech/Saturn-Addon-1.21.4
-gottasweep/HyperAddon
