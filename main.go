@@ -136,10 +136,14 @@ func main() {
 
 	removed := 0
 	for _, repo := range blackListedAddons {
-		_, ok := repos[repo]
-		if ok {
-			delete(repos, repo)
-			removed++
+		lower := strings.ToLower(repo)
+
+		for fullName := range repos {
+			if strings.ToLower(fullName) == lower {
+				delete(repos, fullName)
+				removed++
+				break
+			}
 		}
 	}
 
