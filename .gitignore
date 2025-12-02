@@ -4,6 +4,7 @@
 *.so
 *.dylib
 
+
 *.test
 
 *.out
@@ -16,3 +17,6 @@ go.work.sum
 
 build
 .env
+
+scripts/*
+!scripts/generate-readme.go

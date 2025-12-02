@@ -5,10 +5,59 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
+	"strings"
+	"sync"
 	"time"
 )
 
 var defaultHeaders http.Header
+var httpClient = &http.Client{
+	Timeout: 30 * time.Second,
+}
+
+type RateLimitTracker struct {
+	Remaining int
+	Reset     time.Time
+}
+
+var rateLimits struct {
+	Search RateLimitTracker
+	Core   RateLimitTracker
+	mu     sync.Mutex
+}
+
+func init() {
+	// Initialize with default values
+	rateLimits.Search = RateLimitTracker{Remaining: 30, Reset: time.Now()}
+	rateLimits.Core = RateLimitTracker{Remaining: 5000, Reset: time.Now()}
+}
+
+func detectAPIType(url string) string {
+	if strings.Contains(url, "/search/") {
+		return "search"
+	}
+	return "core"
+}
+
+func getRateLimitTracker(apiType string) *RateLimitTracker {
+	switch apiType {
+	case "search":
+		return &rateLimits.Search
+	case "code_search":
+		return &rateLimits.Search
+	default:
+		return &rateLimits.Core
+	}
+}
+
+func LogRateLimitStatus() {
+	rateLimits.mu.Lock()
+	defer rateLimits.mu.Unlock()
+	fmt.Printf("[Rate Limits] Search: %d/30 | Core: %d/5000\n",
+		rateLimits.Search.Remaining,
+		rateLimits.Core.Remaining)
+}
 
 const RetryAttempts int = 25
 
@@ -74,18 +123,68 @@ func MakeHeadRequest(url string) (int, error) {
 }
 
 func MakeGetRequest(url string) ([]byte, error) {
+	// Detect API type from URL (for pre-request check)
+	apiType := detectAPIType(url)
+
+	// Check rate limit BEFORE request
+	rateLimits.mu.Lock()
+	tracker := getRateLimitTracker(apiType)
+	if tracker.Remaining <= 1 && time.Now().Before(tracker.Reset) {
+		waitTime := time.Until(tracker.Reset)
+		if waitTime > 0 {
+			fmt.Printf("[%s] Rate limit reached. Waiting %v seconds...\n",
+				apiType, waitTime.Seconds())
+			time.Sleep(waitTime + 1*time.Second)
+		}
+	}
+	rateLimits.mu.Unlock()
+
+	// Build and execute request
 	req, err := BuildRequest(url)
 	if err != nil {
 		return nil, err
 	}
-	client := &http.Client{}
-	resp, err := client.Do(req)
+
+	resp, err := httpClient.Do(req)
 	if err != nil {
+		if os.IsTimeout(err) {
+			return nil, fmt.Errorf("Request timeout after 30s: %v", err)
+		}
 		return nil, err
 	}
-
 	defer resp.Body.Close()
 
+	// Read and update rate limit AFTER response
+	rateLimits.mu.Lock()
+
+	// Read which resource was consumed from response header
+	resourceType := resp.Header.Get("X-RateLimit-Resource")
+	if resourceType == "" {
+		// Fallback to URL detection if header missing
+		resourceType = apiType
+	}
+
+	// Get the correct tracker for this resource
+	tracker = getRateLimitTracker(resourceType)
+
+	// Update from response headers
+	if remaining := resp.Header.Get("X-RateLimit-Remaining"); remaining != "" {
+		fmt.Sscanf(remaining, "%d", &tracker.Remaining)
+	}
+	if reset := resp.Header.Get("X-RateLimit-Reset"); reset != "" {
+		var timestamp int64
+		fmt.Sscanf(reset, "%d", &timestamp)
+		tracker.Reset = time.Unix(timestamp, 0)
+	}
+
+	rateLimits.mu.Unlock()
+
+	// Handle rate limit exceeded - return error to trigger retry
+	if resp.StatusCode == 403 && tracker.Remaining == 0 {
+		return nil, fmt.Errorf("GitHub API rate limit exceeded for %s", resourceType)
+	}
+
+	// Read and return response body
 	bytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err

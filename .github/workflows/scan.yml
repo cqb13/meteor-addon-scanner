@@ -18,6 +18,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: write  # Required to push to branches
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -30,18 +33,37 @@ jobs:
       - name: Install Go dependencies
         run: go mod tidy
 
-      - name: Remove old addons.json
-        run: rm -f addons.json
+      - name: Remove old output files
+        run: rm -rf data && mkdir -p data
 
       - name: Run Go program
-        run: go run . config.json addons.json
+        run: go run . data/addons.json
         env:
           KEY: ${{ secrets.KEY }}
 
-      - name: Commit updated addons.json
+      - name: Generate README
+        run: go run scripts/generate-readme.go data/stats.json data/addons.json data/README.md
+
+      - name: Deploy to addons branch
         run: |
-          git config user.name "cqb13"
-          git config user.email "null"
-          git add addons.json
-          git commit -m 'updated addons' || echo
-          git push --force
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Create addons branch if it doesn't exist
+          git fetch origin addons || git checkout --orphan addons
+
+          # If branch exists, checkout and clean it
+          git checkout addons 2>/dev/null || git checkout --orphan addons
+          git rm -rf . || true
+
+          # Copy the generated files
+          cp data/addons.json addons.json
+          cp data/stats.json stats.json
+          cp data/README.md README.md
+
+          # Add and commit
+          git add addons.json stats.json README.md
+          git commit -m "Update addons data - $(date -u +'%Y-%m-%d %H:%M:%S UTC')" || echo "No changes to commit"
+
+          # Push to addons branch
+          git push origin addons --force
