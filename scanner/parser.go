@@ -41,8 +41,7 @@ func isActualTemplate(features Features) bool {
 }
 
 func findVersion(fullName string, defaultBranch string) (string, error) {
-	//TODO: plz remove finding meteor version, as it is unused
-	minecraftVersion, _ := getMinecraftAndMeteorVersions(fullName, defaultBranch)
+	minecraftVersion := getMinecraftVersion(fullName, defaultBranch)
 
 	if minecraftVersion == "" {
 		return "", fmt.Errorf("Could not find Minecraft version")

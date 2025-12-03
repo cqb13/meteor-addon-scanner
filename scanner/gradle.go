@@ -89,11 +89,6 @@ func parseGradleVersions(content string, existingVersions map[string]string) map
 		if len(mcMatch) > 1 {
 			versions["minecraft_version"] = strings.TrimSpace(mcMatch[1])
 		}
-
-		meteorMatch := regexp.MustCompile(`meteor\s*=\s*["']([^"\\]+)["']`).FindStringSubmatch(content)
-		if len(meteorMatch) > 1 {
-			versions["meteor_version"] = strings.TrimSpace(meteorMatch[1])
-		}
 		return versions
 	}
 
@@ -148,66 +143,11 @@ func parseGradleVersions(content string, existingVersions map[string]string) map
 		}
 	}
 
-	// Meteor Version Extraction
-	meteorRe := regexp.MustCompile(`(?i)(?:meteor[_-]?version|meteorVersion)\s*=\s*(?:"([^"\n]*)"|'([^'\n]*)'|([^"'\s]+))`)
-	meteorMatch := meteorRe.FindStringSubmatch(content)
-	if len(meteorMatch) > 0 {
-		var val string
-		if meteorMatch[1] != "" {
-			val = meteorMatch[1]
-		} else if meteorMatch[2] != "" {
-			val = meteorMatch[2]
-		} else {
-			val = meteorMatch[3]
-		}
-		versions["meteor_version"] = resolveVariable(strings.TrimSpace(val), versions, existingVersions)
-	} else {
-		depRe := regexp.MustCompile(`(?i)meteor-client[:](.*)`)
-		depMatch := depRe.FindStringSubmatch(content)
-		if len(depMatch) > 1 {
-			rawLine := strings.TrimSpace(depMatch[1])
-			lastQuoteIdx := -1
-			if idx := strings.LastIndex(rawLine, "\""); idx != -1 {
-				lastQuoteIdx = idx
-			} else if idx := strings.LastIndex(rawLine, "'"); idx != -1 {
-				lastQuoteIdx = idx
-			}
-
-			var rawVersionString string
-			if lastQuoteIdx != -1 {
-				rawVersionString = rawLine[:lastQuoteIdx]
-			} else {
-				parts := strings.Fields(rawLine)
-				if len(parts) > 0 {
-					rawVersionString = parts[0]
-				}
-			}
-			versions["meteor_version"] = resolveVariable(rawVersionString, versions, existingVersions)
-		} else {
-			fileRe := regexp.MustCompile(`(?i)files\s*\((?:.*?)meteor-client-([a-zA-Z0-9\.\-_]+)\.jar(?:.*?)\)`)
-			fileMatch := fileRe.FindStringSubmatch(content)
-			if len(fileMatch) > 1 {
-				versions["meteor_version"] = fileMatch[1]
-			}
-		}
-	}
-
-	// Normalization and Validation
-	if v, ok := versions["meteor_version"]; ok {
-		if strings.Contains(v, "stonecutter") || strings.Contains(v, "current.version") {
-			versions["meteor_version"] = "SNAPSHOT"
-		} else if !regexp.MustCompile(`^[a-zA-Z0-9\.\-_]+$`).MatchString(v) {
-			if strings.TrimSpace(v) == "" {
-				delete(versions, "meteor_version")
-			}
-		}
-	}
-
 	return versions
 }
 
-// fetches and parses gradle files to extract versions
-func getMinecraftAndMeteorVersions(fullName, defaultBranch string) (minecraftVersion, meteorVersion string) {
+// fetches and parses gradle files to extract minecraft version
+func getMinecraftVersion(fullName, defaultBranch string) string {
 	// Priority order: gradle/libs.versions.toml → libs.versions.toml → gradle.properties → build.gradle → build.gradle.kts
 
 	// Try gradle/libs.versions.toml first
@@ -216,13 +156,7 @@ func getMinecraftAndMeteorVersions(fullName, defaultBranch string) (minecraftVer
 	if err == nil && string(bytes) != "404: Not Found" {
 		versions := parseGradleVersions(string(bytes), nil)
 		if mc, ok := versions["minecraft_version"]; ok {
-			minecraftVersion = mc
-		}
-		if meteor, ok := versions["meteor_version"]; ok {
-			meteorVersion = meteor
-		}
-		if minecraftVersion != "" {
-			return minecraftVersion, meteorVersion
+			return mc
 		}
 	}
 
@@ -232,13 +166,7 @@ func getMinecraftAndMeteorVersions(fullName, defaultBranch string) (minecraftVer
 	if err == nil && string(bytes) != "404: Not Found" {
 		versions := parseGradleVersions(string(bytes), nil)
 		if mc, ok := versions["minecraft_version"]; ok {
-			minecraftVersion = mc
-		}
-		if meteor, ok := versions["meteor_version"]; ok {
-			meteorVersion = meteor
-		}
-		if minecraftVersion != "" {
-			return minecraftVersion, meteorVersion
+			return mc
 		}
 	}
 
@@ -250,13 +178,7 @@ func getMinecraftAndMeteorVersions(fullName, defaultBranch string) (minecraftVer
 		versions := parseGradleVersions(string(bytes), nil)
 		maps.Copy(allVersions, versions)
 		if mc, ok := versions["minecraft_version"]; ok {
-			minecraftVersion = mc
-		}
-		if meteor, ok := versions["meteor_version"]; ok {
-			meteorVersion = meteor
-		}
-		if minecraftVersion != "" {
-			return minecraftVersion, meteorVersion
+			return mc
 		}
 	}
 
@@ -266,13 +188,7 @@ func getMinecraftAndMeteorVersions(fullName, defaultBranch string) (minecraftVer
 	if err == nil && string(bytes) != "404: Not Found" {
 		versions := parseGradleVersions(string(bytes), allVersions)
 		if mc, ok := versions["minecraft_version"]; ok {
-			minecraftVersion = mc
-		}
-		if meteor, ok := versions["meteor_version"]; ok {
-			meteorVersion = meteor
-		}
-		if minecraftVersion != "" {
-			return minecraftVersion, meteorVersion
+			return mc
 		}
 	}
 
@@ -282,12 +198,9 @@ func getMinecraftAndMeteorVersions(fullName, defaultBranch string) (minecraftVer
 	if err == nil && string(bytes) != "404: Not Found" {
 		versions := parseGradleVersions(string(bytes), allVersions)
 		if mc, ok := versions["minecraft_version"]; ok {
-			minecraftVersion = mc
-		}
-		if meteor, ok := versions["meteor_version"]; ok {
-			meteorVersion = meteor
+			return mc
 		}
 	}
 
-	return minecraftVersion, meteorVersion
+	return ""
 }
