@@ -6,6 +6,9 @@ import (
 	"strings"
 )
 
+// Pre-compile regexp used in resolveVariable
+var identifierRe = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
+
 // resolveVariable resolves a variable reference like ${var} or properties["var"]
 func resolveVariable(versionStr string, currentVersions, allVersions map[string]string) string {
 	if versionStr == "" {
@@ -60,7 +63,7 @@ func resolveVariable(versionStr string, currentVersions, allVersions map[string]
 		} else if strings.HasPrefix(innerContent, "project.") {
 			varName = strings.TrimPrefix(innerContent, "project.")
 			varName = strings.TrimSpace(varName)
-		} else if matched, _ := regexp.MatchString(`^[a-zA-Z_][a-zA-Z0-9_]*$`, innerContent); matched {
+		} else if identifierRe.MatchString(innerContent) {
 			varName = innerContent
 		}
 
@@ -84,10 +87,8 @@ func resolveVariable(versionStr string, currentVersions, allVersions map[string]
 // ParseGradleVersions extracts Minecraft and Meteor versions from Gradle content
 func ParseGradleVersions(content string, existingVersions map[string]string) map[string]string {
 	versions := make(map[string]string)
-	if existingVersions != nil {
-		for k, v := range existingVersions {
-			versions[k] = v
-		}
+	for k, v := range existingVersions {
+		versions[k] = v
 	}
 
 	// TOML Check

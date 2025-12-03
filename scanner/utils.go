@@ -51,14 +51,6 @@ func getRateLimitTracker(apiType string) *RateLimitTracker {
 	}
 }
 
-func LogRateLimitStatus() {
-	rateLimits.mu.Lock()
-	defer rateLimits.mu.Unlock()
-	fmt.Printf("[Rate Limits] Search: %d/30 | Core: %d/5000\n",
-		rateLimits.Search.Remaining,
-		rateLimits.Core.Remaining)
-}
-
 const RetryAttempts int = 25
 
 type forkedRepository struct {

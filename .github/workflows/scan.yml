@@ -36,13 +36,10 @@ jobs:
       - name: Remove old output files
         run: rm -rf data && mkdir -p data
 
-      - name: Run Go program
-        run: go run . data/addons.json
+      - name: Run scanner and generate files
+        run: go run . data/addons.json data/README.md
         env:
           KEY: ${{ secrets.KEY }}
-
-      - name: Generate README
-        run: go run scripts/generate-readme.go data/stats.json data/addons.json data/README.md
 
       - name: Deploy to addons branch
         run: |
@@ -58,11 +55,10 @@ jobs:
 
           # Copy the generated files
           cp data/addons.json addons.json
-          cp data/stats.json stats.json
           cp data/README.md README.md
 
           # Add and commit
-          git add addons.json stats.json README.md
+          git add addons.json README.md
           git commit -m "Update addons data - $(date -u +'%Y-%m-%d %H:%M:%S UTC')" || echo "No changes to commit"
 
           # Push to addons branch

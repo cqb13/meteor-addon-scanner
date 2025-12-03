@@ -11,10 +11,6 @@ func splitCamelCase(input string) string {
 	return re.ReplaceAllString(input, "$1 $2")
 }
 
-func containsIgnoreCase(s, substr string) bool {
-	return strings.Contains(strings.ToLower(s), strings.ToLower(substr))
-}
-
 func detectVariable(source string, pattern string) string {
 	re := regexp.MustCompile(pattern)
 	match := re.FindStringSubmatch(source)
@@ -24,7 +20,7 @@ func detectVariable(source string, pattern string) string {
 	return "" // fallback to default pattern
 }
 
-func findFeatures(fullName string, defaultBranch string, entrypoint string, addonName string) (Features, error) {
+func findFeatures(fullName string, defaultBranch string, entrypoint string) (Features, error) {
 	url := fmt.Sprintf("https://raw.githubusercontent.com/%v/%v/src/main/java/%v.java",
 		fullName, defaultBranch, strings.ReplaceAll(entrypoint, ".", "/"))
 	bytes, err := MakeGetRequest(url)
@@ -97,11 +93,11 @@ func findFeatures(fullName string, defaultBranch string, entrypoint string, addo
 	// Extract variable-based registrations
 	for _, match := range varRegisterRegex.FindAllStringSubmatch(source, -1) {
 		if len(match) >= 6 {
-			className := match[1]       // Type in declaration
-			varName := match[2]         // variable name
-			newClassName := match[3]    // Type after 'new'
-			registerType := match[4]    // What's being added to (Modules/Commands/Systems)
-			addedVar := match[5]        // Variable being added
+			className := match[1]    // Type in declaration
+			varName := match[2]      // variable name
+			newClassName := match[3] // Type after 'new'
+			registerType := match[4] // What's being added to (Modules/Commands/Systems)
+			addedVar := match[5]     // Variable being added
 
 			// Verify backreferences manually since RE2 doesn't support them
 			if className != newClassName || varName != addedVar {

@@ -87,103 +87,17 @@ func compareMCVersions(v1, v2 string) bool {
 	return false // versions are equal
 }
 
-// shouldProcessRelease determines if a release should be processed.
-// Draft releases are always skipped. If allowPrerelease is false,
-// only stable releases are processed.
-func shouldProcessRelease(rel release, allowPrerelease bool) bool {
-	// Always skip draft releases
-	if rel.Draft {
-		return false
-	}
-
-	// If prereleases allowed, accept any non-draft
-	if allowPrerelease {
-		return true
-	}
-
-	// Otherwise, only accept stable releases
-	return !rel.Prerelease
-}
-
-// findReleaseJars searches GitHub releases for valid JAR downloads.
-// Paginates through all releases, filtering by allowPrerelease parameter.
-// Draft releases are always skipped.
-func findReleaseJars(fullName string, allowPrerelease bool) ([]string, int, error) {
-	url := fmt.Sprintf("https://api.github.com/repos/%v/releases?per_page=100&page=", fullName)
-
-	var totalDownloadCount int = 0
-	downloads := make([]string, 0)
-	foundValidRelease := false
-	page := 1
-
-	for {
-		bytes, err := MakeGetRequest(fmt.Sprintf("%v%v", url, page))
-		if err != nil {
-			return nil, 0, err
-		}
-
-		var releases []release
-		err = json.Unmarshal(bytes, &releases)
-		if err != nil {
-			return nil, 0, err
-		}
-
-		if len(releases) == 0 {
-			break
-		}
-
-		for _, rel := range releases {
-			// Skip based on draft/prerelease status
-			if !shouldProcessRelease(rel, allowPrerelease) {
-				continue
-			}
-
-			hasValidJar := false
-			for _, asset := range rel.Assets {
-				// Check if valid distributable JAR
-				if isValidJarAsset(asset.Name) {
-					// Count downloads only from valid distributable JARs
-					totalDownloadCount += asset.Downloads
-
-					if !foundValidRelease {
-						downloads = append(downloads, asset.Url)
-						hasValidJar = true
-					}
-				}
-			}
-
-			if hasValidJar {
-				foundValidRelease = true
-			}
-		}
-
-		page++
-	}
-
-	return downloads, totalDownloadCount, nil
-}
-
 // getReleaseDetails fetches GitHub releases and returns download URLs.
+// Paginates through ALL releases to ensure accurate download counts.
 //
 // Strategy:
 //   1. Fetch both stable and prerelease downloads
 //   2. Determine which is the absolute latest based on GitHub's ordering
-//   3. Returns: all download URLs, latest URL, total download count, error
+//   3. Paginate through all releases to count all downloads
 //
 // Returns: all downloads, latest release URL, total download count, error
 func getReleaseDetails(fullName string) ([]string, string, int, error) {
-	url := fmt.Sprintf("https://api.github.com/repos/%v/releases?per_page=100&page=1", fullName)
-
-	bytes, err := MakeGetRequest(url)
-	if err != nil {
-		return nil, "", 0, err
-	}
-
-	var releases []release
-	err = json.Unmarshal(bytes, &releases)
-	if err != nil {
-		return nil, "", 0, err
-	}
+	url := fmt.Sprintf("https://api.github.com/repos/%v/releases?per_page=100&page=", fullName)
 
 	var stableDownloads []string
 	var prereleaseDownloads []string
@@ -192,73 +106,97 @@ func getReleaseDetails(fullName string) ([]string, string, int, error) {
 	var totalDownloadCount int
 	foundStable := false
 	foundPrerelease := false
+	page := 1
 
-	// GitHub returns releases in order from newest to oldest
-	for _, rel := range releases {
-		// Skip drafts
-		if rel.Draft {
-			continue
+	// Paginate through all releases
+	for {
+		bytes, err := MakeGetRequest(fmt.Sprintf("%v%v", url, page))
+		if err != nil {
+			return nil, "", 0, err
 		}
 
-		isStable := !rel.Prerelease
-
-		// Count downloads from all valid JARs
-		for _, asset := range rel.Assets {
-			if isValidJarAsset(asset.Name) {
-				totalDownloadCount += asset.Downloads
-			}
+		var releases []release
+		err = json.Unmarshal(bytes, &releases)
+		if err != nil {
+			return nil, "", 0, err
 		}
 
-		// Get stable release (if not found yet)
-		if isStable && !foundStable {
-			// Collect ALL valid JARs from this stable release
-			for _, asset := range rel.Assets {
-				if isValidJarAsset(asset.Name) {
-					stableDownloads = append(stableDownloads, asset.Url)
-
-					// Extract MC version from filename and track highest version
-					mcVersion := extractMCVersionFromFilename(asset.Name)
-					if compareMCVersions(mcVersion, latestVersion) {
-						latestVersion = mcVersion
-						latestDownload = asset.Url
-					} else if latestDownload == "" {
-						// Fallback: if no version detected, use first JAR
-						latestDownload = asset.Url
-					}
-				}
-			}
-			if len(stableDownloads) > 0 {
-				foundStable = true
-			}
-		}
-
-		// Get prerelease (if not found yet)
-		if !isStable && !foundPrerelease {
-			// Collect ALL valid JARs from this prerelease
-			for _, asset := range rel.Assets {
-				if isValidJarAsset(asset.Name) {
-					prereleaseDownloads = append(prereleaseDownloads, asset.Url)
-
-					// Extract MC version from filename and track highest version
-					mcVersion := extractMCVersionFromFilename(asset.Name)
-					if compareMCVersions(mcVersion, latestVersion) {
-						latestVersion = mcVersion
-						latestDownload = asset.Url
-					} else if latestDownload == "" {
-						// Fallback: if no version detected, use first JAR
-						latestDownload = asset.Url
-					}
-				}
-			}
-			if len(prereleaseDownloads) > 0 {
-				foundPrerelease = true
-			}
-		}
-
-		// Stop searching once we've found both
-		if foundStable && foundPrerelease {
+		// No more releases, break pagination loop
+		if len(releases) == 0 {
 			break
 		}
+
+		// GitHub returns releases in order from newest to oldest
+		for _, rel := range releases {
+			// Skip drafts
+			if rel.Draft {
+				continue
+			}
+
+			isStable := !rel.Prerelease
+
+			// Count downloads from all valid JARs across ALL pages
+			for _, asset := range rel.Assets {
+				if isValidJarAsset(asset.Name) {
+					totalDownloadCount += asset.Downloads
+				}
+			}
+
+			// Get stable release (if not found yet)
+			if isStable && !foundStable {
+				// Collect ALL valid JARs from this stable release
+				for _, asset := range rel.Assets {
+					if isValidJarAsset(asset.Name) {
+						stableDownloads = append(stableDownloads, asset.Url)
+
+						// Extract MC version from filename and track highest version
+						mcVersion := extractMCVersionFromFilename(asset.Name)
+						if compareMCVersions(mcVersion, latestVersion) {
+							latestVersion = mcVersion
+							latestDownload = asset.Url
+						} else if latestDownload == "" {
+							// Fallback: if no version detected, use first JAR
+							latestDownload = asset.Url
+						}
+					}
+				}
+				if len(stableDownloads) > 0 {
+					foundStable = true
+				}
+			}
+
+			// Get prerelease (if not found yet)
+			if !isStable && !foundPrerelease {
+				// Collect ALL valid JARs from this prerelease
+				for _, asset := range rel.Assets {
+					if isValidJarAsset(asset.Name) {
+						prereleaseDownloads = append(prereleaseDownloads, asset.Url)
+
+						// Extract MC version from filename and track highest version
+						mcVersion := extractMCVersionFromFilename(asset.Name)
+						if compareMCVersions(mcVersion, latestVersion) {
+							latestVersion = mcVersion
+							latestDownload = asset.Url
+						} else if latestDownload == "" {
+							// Fallback: if no version detected, use first JAR
+							latestDownload = asset.Url
+						}
+					}
+				}
+				if len(prereleaseDownloads) > 0 {
+					foundPrerelease = true
+				}
+			}
+
+			// Stop searching for latest downloads once we've found both
+			// But continue pagination to count all downloads
+			if foundStable && foundPrerelease {
+				// Continue to next page for download counting
+				break
+			}
+		}
+
+		page++
 	}
 
 	// Combine downloads: stable first, then prerelease

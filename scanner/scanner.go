@@ -31,7 +31,7 @@ func fetchBySearch(name string, url string) {
 	var page int = 1
 	fmt.Printf("\tFetching based on %v\n", name)
 	for {
-		if complete == true {
+		if complete {
 			break
 		}
 
@@ -131,7 +131,7 @@ func fetchByForkOfTemplate() {
 	var page int = 1
 	fmt.Printf("\tFetching fokrs of template\n")
 	for {
-		if complete == true {
+		if complete {
 			break
 		}
 

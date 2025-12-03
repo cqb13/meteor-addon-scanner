@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -19,14 +18,6 @@ type Config struct {
 	Verified                []string `json:"verified"`
 	IgnoreArchived          bool     `json:"ignore_archived"`
 	IgnoreForks             bool     `json:"ignore_forks"`
-}
-
-type Stats struct {
-	LastUpdated          string  `json:"last_updated"`
-	ValidAddonsCount     int     `json:"valid_addons_count"`
-	ArchivedAddonsCount  int     `json:"archived_addons_count"`
-	InvalidAddonsCount   int     `json:"invalid_addons_count"`
-	ExecutionTimeSeconds float64 `json:"execution_time_seconds"`
 }
 
 func loadConfig(path string) (*Config, error) {
@@ -61,12 +52,13 @@ func main() {
 	startTime := time.Now()
 	args := os.Args
 
-	if len(args) < 2 {
-		fmt.Println("Usage: meteor-addon-scanner <output.json>")
+	if len(args) < 3 {
+		fmt.Println("Usage: meteor-addon-scanner <output.json> <readme.md>")
 		return
 	}
 
 	outputPath := args[1]
+	readmePath := args[2]
 
 	err := validateOutputPath(outputPath)
 	if err != nil {
@@ -160,14 +152,6 @@ func main() {
 		}
 	}
 
-	// Count archived addons
-	archivedCount := 0
-	for _, addon := range result.Addons {
-		if addon.Repo.Archived {
-			archivedCount++
-		}
-	}
-
 	// Marshal result to JSON (minified)
 	jsonData, err := json.Marshal(result)
 	if err != nil {
@@ -188,28 +172,30 @@ func main() {
 		return
 	}
 
-	// Create stats
-	stats := Stats{
-		LastUpdated:          time.Now().UTC().Format(time.RFC3339),
-		ValidAddonsCount:     len(result.Addons),
-		ArchivedAddonsCount:  archivedCount,
-		InvalidAddonsCount:   len(result.InvalidAddons),
-		ExecutionTimeSeconds: time.Since(startTime).Seconds(),
+	// Count archived addons for summary
+	archivedCount := 0
+	for _, addon := range result.Addons {
+		if addon.Repo.Archived {
+			archivedCount++
+		}
 	}
 
-	// Write stats.json (minified) to the same directory as output
-	statsData, _ := json.Marshal(stats)
-	outputDir := filepath.Dir(outputPath)
-	statsPath := filepath.Join(outputDir, "stats.json")
-	statsFile, _ := os.Create(statsPath)
-	statsFile.Write(statsData)
-	statsFile.Close()
-
+	// Print summary statistics
+	executionTime := time.Since(startTime).Seconds()
 	fmt.Printf("\nStatistics:\n")
-	fmt.Printf("  Valid Addons: %d\n", stats.ValidAddonsCount)
-	fmt.Printf("  Archived: %d\n", stats.ArchivedAddonsCount)
-	fmt.Printf("  Invalid: %d\n", stats.InvalidAddonsCount)
-	fmt.Printf("  Execution Time: %.2fs\n", stats.ExecutionTimeSeconds)
+	fmt.Printf("  Valid Addons: %d\n", len(result.Addons))
+	fmt.Printf("  Archived: %d\n", archivedCount)
+	fmt.Printf("  Invalid: %d\n", len(result.InvalidAddons))
+	fmt.Printf("  Execution Time: %.2fs\n", executionTime)
+
+	// Generate README
+	fmt.Println("\nGenerating README...")
+	err = scanner.GenerateReadme(result, readmePath, executionTime)
+	if err != nil {
+		fmt.Printf("Failed to generate README: %v\n", err)
+		return
+	}
+	fmt.Printf("README generated at %s\n", readmePath)
 
 	fmt.Println("Done!")
 }

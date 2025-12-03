@@ -108,7 +108,7 @@ func ParseRepo(fullName string) (*Addon, error) {
 		return nil, err
 	}
 
-	features, err := findFeatures(fullName, repo.DefaultBranch, meteorEntries[0], fabricModJson.Name)
+	features, err := findFeatures(fullName, repo.DefaultBranch, meteorEntries[0])
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +137,7 @@ func ParseRepo(fullName string) (*Addon, error) {
 
 	addon := Addon{
 		Name:        fabricModJson.Name,
-		Description: fabricModJson.Description,
+		Description: description,
 		McVersion:   version,
 		Authors:     authors,
 		Features:    features,
