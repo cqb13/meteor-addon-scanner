@@ -2,14 +2,14 @@ package scanner
 
 import (
 	"fmt"
+	"maps"
 	"regexp"
 	"strings"
 )
 
-// Pre-compile regexp used in resolveVariable
 var identifierRe = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
 
-// resolveVariable resolves a variable reference like ${var} or properties["var"]
+// resolves a variable reference like ${var} or properties["var"]
 func resolveVariable(versionStr string, currentVersions, allVersions map[string]string) string {
 	if versionStr == "" {
 		return ""
@@ -17,30 +17,24 @@ func resolveVariable(versionStr string, currentVersions, allVersions map[string]
 
 	resolved := versionStr
 	lookupSources := make(map[string]string)
-	for k, v := range currentVersions {
-		lookupSources[k] = v
-	}
-	for k, v := range allVersions {
-		lookupSources[k] = v
-	}
+	maps.Copy(lookupSources, currentVersions)
+	maps.Copy(lookupSources, allVersions)
 
-	// Helper to perform replacements
 	replaceVar := func(matchStr, varName string) {
 		if val, ok := lookupSources[varName]; ok {
 			resolved = strings.Replace(resolved, matchStr, val, 1)
 		}
 	}
 
-	// 1. Handle ${...} patterns
+	// Handle ${...} patterns
 	braceRe := regexp.MustCompile(`\$\s*\{([^}]+)\}`)
 
 	matches := braceRe.FindAllStringSubmatch(resolved, -1)
-	// Iterate reversed
+
 	for i := len(matches) - 1; i >= 0; i-- {
 		fullMatch := matches[i][0]
 		innerContent := strings.TrimSpace(matches[i][1])
 
-		// Cleanup
 		innerContent = strings.ReplaceAll(innerContent, ".toString()", "")
 		innerContent = strings.ReplaceAll(innerContent, " as String", "")
 
@@ -60,8 +54,8 @@ func resolveVariable(versionStr string, currentVersions, allVersions map[string]
 			if m := propFuncRe.FindStringSubmatch(innerContent); m != nil {
 				varName = m[1]
 			}
-		} else if strings.HasPrefix(innerContent, "project.") {
-			varName = strings.TrimPrefix(innerContent, "project.")
+		} else if after, ok := strings.CutPrefix(innerContent, "project."); ok {
+			varName = after
 			varName = strings.TrimSpace(varName)
 		} else if identifierRe.MatchString(innerContent) {
 			varName = innerContent
@@ -72,7 +66,7 @@ func resolveVariable(versionStr string, currentVersions, allVersions map[string]
 		}
 	}
 
-	// 2. Handle simple $variable patterns
+	// Handle $variable patterns
 	simpleRe := regexp.MustCompile(`\$([a-zA-Z_][a-zA-Z0-9_]*)`)
 	simpleMatches := simpleRe.FindAllStringSubmatch(resolved, -1)
 	for i := len(simpleMatches) - 1; i >= 0; i-- {
@@ -84,12 +78,10 @@ func resolveVariable(versionStr string, currentVersions, allVersions map[string]
 	return resolved
 }
 
-// ParseGradleVersions extracts Minecraft and Meteor versions from Gradle content
-func ParseGradleVersions(content string, existingVersions map[string]string) map[string]string {
+// extracts Minecraft and Meteor versions from Gradle content
+func parseGradleVersions(content string, existingVersions map[string]string) map[string]string {
 	versions := make(map[string]string)
-	for k, v := range existingVersions {
-		versions[k] = v
-	}
+	maps.Copy(versions, existingVersions)
 
 	// TOML Check
 	if strings.Contains(content, "[versions]") {
@@ -123,7 +115,7 @@ func ParseGradleVersions(content string, existingVersions map[string]string) map
 		}
 	}
 
-	// --- Minecraft Version Extraction ---
+	// Minecraft Version Extraction
 	mcRe := regexp.MustCompile(`(?:minecraft_version|minecraftVersion)\s*=\s*(?:"([^"\n]*)"|'([^'\n]*)'|([^"'\s]+))`)
 	mcMatch := mcRe.FindStringSubmatch(content)
 	if len(mcMatch) > 0 {
@@ -156,7 +148,7 @@ func ParseGradleVersions(content string, existingVersions map[string]string) map
 		}
 	}
 
-	// --- Meteor Version Extraction ---
+	// Meteor Version Extraction
 	meteorRe := regexp.MustCompile(`(?i)(?:meteor[_-]?version|meteorVersion)\s*=\s*(?:"([^"\n]*)"|'([^'\n]*)'|([^"'\s]+))`)
 	meteorMatch := meteorRe.FindStringSubmatch(content)
 	if len(meteorMatch) > 0 {
@@ -214,15 +206,15 @@ func ParseGradleVersions(content string, existingVersions map[string]string) map
 	return versions
 }
 
-// parseGradleVersions fetches and parses gradle files to extract versions
-func parseGradleVersions(owner, repo, defaultBranch string) (minecraftVersion, meteorVersion string) {
+// fetches and parses gradle files to extract versions
+func getMinecraftAndMeteorVersions(fullName, defaultBranch string) (minecraftVersion, meteorVersion string) {
 	// Priority order: gradle/libs.versions.toml → libs.versions.toml → gradle.properties → build.gradle → build.gradle.kts
 
 	// Try gradle/libs.versions.toml first
-	url := fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/%s/gradle/libs.versions.toml", owner, repo, defaultBranch)
+	url := fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/gradle/libs.versions.toml", fullName, defaultBranch)
 	bytes, err := MakeGetRequest(url)
 	if err == nil && string(bytes) != "404: Not Found" {
-		versions := ParseGradleVersions(string(bytes), nil)
+		versions := parseGradleVersions(string(bytes), nil)
 		if mc, ok := versions["minecraft_version"]; ok {
 			minecraftVersion = mc
 		}
@@ -235,10 +227,10 @@ func parseGradleVersions(owner, repo, defaultBranch string) (minecraftVersion, m
 	}
 
 	// Try libs.versions.toml in root (some addons put it there)
-	url = fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/%s/libs.versions.toml", owner, repo, defaultBranch)
+	url = fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/libs.versions.toml", fullName, defaultBranch)
 	bytes, err = MakeGetRequest(url)
 	if err == nil && string(bytes) != "404: Not Found" {
-		versions := ParseGradleVersions(string(bytes), nil)
+		versions := parseGradleVersions(string(bytes), nil)
 		if mc, ok := versions["minecraft_version"]; ok {
 			minecraftVersion = mc
 		}
@@ -251,14 +243,12 @@ func parseGradleVersions(owner, repo, defaultBranch string) (minecraftVersion, m
 	}
 
 	// Try gradle.properties
-	url = fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/%s/gradle.properties", owner, repo, defaultBranch)
+	url = fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/gradle.properties", fullName, defaultBranch)
 	bytes, err = MakeGetRequest(url)
 	allVersions := make(map[string]string)
 	if err == nil && string(bytes) != "404: Not Found" {
-		versions := ParseGradleVersions(string(bytes), nil)
-		for k, v := range versions {
-			allVersions[k] = v
-		}
+		versions := parseGradleVersions(string(bytes), nil)
+		maps.Copy(allVersions, versions)
 		if mc, ok := versions["minecraft_version"]; ok {
 			minecraftVersion = mc
 		}
@@ -271,10 +261,10 @@ func parseGradleVersions(owner, repo, defaultBranch string) (minecraftVersion, m
 	}
 
 	// Try build.gradle
-	url = fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/%s/build.gradle", owner, repo, defaultBranch)
+	url = fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/build.gradle", fullName, defaultBranch)
 	bytes, err = MakeGetRequest(url)
 	if err == nil && string(bytes) != "404: Not Found" {
-		versions := ParseGradleVersions(string(bytes), allVersions)
+		versions := parseGradleVersions(string(bytes), allVersions)
 		if mc, ok := versions["minecraft_version"]; ok {
 			minecraftVersion = mc
 		}
@@ -287,10 +277,10 @@ func parseGradleVersions(owner, repo, defaultBranch string) (minecraftVersion, m
 	}
 
 	// Try build.gradle.kts
-	url = fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/%s/build.gradle.kts", owner, repo, defaultBranch)
+	url = fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/build.gradle.kts", fullName, defaultBranch)
 	bytes, err = MakeGetRequest(url)
 	if err == nil && string(bytes) != "404: Not Found" {
-		versions := ParseGradleVersions(string(bytes), allVersions)
+		versions := parseGradleVersions(string(bytes), allVersions)
 		if mc, ok := versions["minecraft_version"]; ok {
 			minecraftVersion = mc
 		}

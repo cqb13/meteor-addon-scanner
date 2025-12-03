@@ -7,8 +7,7 @@ import (
 	"strings"
 )
 
-// isValidJarAsset checks if an asset name is a valid distributable JAR.
-// Filters out development, source, documentation, and fat JARs.
+// filters out development, source, documentation, and fat JARs.
 func isValidJarAsset(assetName string) bool {
 	name := strings.ToLower(assetName)
 
@@ -16,7 +15,6 @@ func isValidJarAsset(assetName string) bool {
 		return false
 	}
 
-	// Exclude non-distributable JAR types
 	excludedSuffixes := []string{
 		"-dev.jar",
 		"-sources.jar",
@@ -33,8 +31,6 @@ func isValidJarAsset(assetName string) bool {
 	return true
 }
 
-// extractMCVersionFromFilename attempts to extract a Minecraft version from a JAR filename.
-// Returns the version string (e.g., "1.21.10") or empty string if not found.
 func extractMCVersionFromFilename(filename string) string {
 	// Match patterns like: 1.21, 1.21.1, 1.21.10, etc.
 	re := regexp.MustCompile(`(?i)(?:^|[_\-\.])(?:mc)?[_\-\.]?(1\.\d+(?:\.\d+)?)(?:[_\-\.]|\.jar$)`)
@@ -45,9 +41,6 @@ func extractMCVersionFromFilename(filename string) string {
 	return ""
 }
 
-// compareMCVersions compares two Minecraft version strings.
-// Returns true if v1 > v2 (v1 is newer), false otherwise.
-// Handles versions like "1.21", "1.21.1", "1.21.10"
 func compareMCVersions(v1, v2 string) bool {
 	if v1 == "" {
 		return false
@@ -56,17 +49,13 @@ func compareMCVersions(v1, v2 string) bool {
 		return true
 	}
 
-	// Parse version parts
 	parts1 := strings.Split(v1, ".")
 	parts2 := strings.Split(v2, ".")
 
 	// Compare each part numerically
-	maxLen := len(parts1)
-	if len(parts2) > maxLen {
-		maxLen = len(parts2)
-	}
+	maxLen := max(len(parts2), len(parts1))
 
-	for i := 0; i < maxLen; i++ {
+	for i := range maxLen {
 		var p1, p2 int
 
 		if i < len(parts1) {
@@ -84,18 +73,9 @@ func compareMCVersions(v1, v2 string) bool {
 		}
 	}
 
-	return false // versions are equal
+	return false
 }
 
-// getReleaseDetails fetches GitHub releases and returns download URLs.
-// Paginates through ALL releases to ensure accurate download counts.
-//
-// Strategy:
-//   1. Fetch both stable and prerelease downloads
-//   2. Determine which is the absolute latest based on GitHub's ordering
-//   3. Paginate through all releases to count all downloads
-//
-// Returns: all downloads, latest release URL, total download count, error
 func getReleaseDetails(fullName string) ([]string, string, int, error) {
 	url := fmt.Sprintf("https://api.github.com/repos/%v/releases?per_page=100&page=", fullName)
 
@@ -108,7 +88,6 @@ func getReleaseDetails(fullName string) ([]string, string, int, error) {
 	foundPrerelease := false
 	page := 1
 
-	// Paginate through all releases
 	for {
 		bytes, err := MakeGetRequest(fmt.Sprintf("%v%v", url, page))
 		if err != nil {
@@ -121,30 +100,24 @@ func getReleaseDetails(fullName string) ([]string, string, int, error) {
 			return nil, "", 0, err
 		}
 
-		// No more releases, break pagination loop
 		if len(releases) == 0 {
 			break
 		}
 
-		// GitHub returns releases in order from newest to oldest
 		for _, rel := range releases {
-			// Skip drafts
 			if rel.Draft {
 				continue
 			}
 
 			isStable := !rel.Prerelease
 
-			// Count downloads from all valid JARs across ALL pages
 			for _, asset := range rel.Assets {
 				if isValidJarAsset(asset.Name) {
 					totalDownloadCount += asset.Downloads
 				}
 			}
 
-			// Get stable release (if not found yet)
 			if isStable && !foundStable {
-				// Collect ALL valid JARs from this stable release
 				for _, asset := range rel.Assets {
 					if isValidJarAsset(asset.Name) {
 						stableDownloads = append(stableDownloads, asset.Url)
@@ -155,7 +128,7 @@ func getReleaseDetails(fullName string) ([]string, string, int, error) {
 							latestVersion = mcVersion
 							latestDownload = asset.Url
 						} else if latestDownload == "" {
-							// Fallback: if no version detected, use first JAR
+							// if no version detected, use first JAR
 							latestDownload = asset.Url
 						}
 					}
@@ -165,9 +138,7 @@ func getReleaseDetails(fullName string) ([]string, string, int, error) {
 				}
 			}
 
-			// Get prerelease (if not found yet)
 			if !isStable && !foundPrerelease {
-				// Collect ALL valid JARs from this prerelease
 				for _, asset := range rel.Assets {
 					if isValidJarAsset(asset.Name) {
 						prereleaseDownloads = append(prereleaseDownloads, asset.Url)
@@ -178,7 +149,7 @@ func getReleaseDetails(fullName string) ([]string, string, int, error) {
 							latestVersion = mcVersion
 							latestDownload = asset.Url
 						} else if latestDownload == "" {
-							// Fallback: if no version detected, use first JAR
+							// if no version detected, use first JAR
 							latestDownload = asset.Url
 						}
 					}
@@ -188,21 +159,13 @@ func getReleaseDetails(fullName string) ([]string, string, int, error) {
 				}
 			}
 
-			// Stop searching for latest downloads once we've found both
-			// But continue pagination to count all downloads
-			if foundStable && foundPrerelease {
-				// Continue to next page for download counting
-				break
-			}
 		}
 
 		page++
 	}
 
-	// Combine downloads: stable first, then prerelease
 	allDownloads := append(stableDownloads, prereleaseDownloads...)
 
-	// If no releases found at all, return empty
 	if len(allDownloads) == 0 {
 		return []string{}, "", totalDownloadCount, nil
 	}

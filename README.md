@@ -9,16 +9,23 @@ Check out the [Meteor Addon List](https://www.meteoraddons.com)
 ## Usage
 
 1. Create a **.env** file with a value **KEY** with a github API key with read access to public repositories
-2. Create a **config.json** file with your configuration (see repository for example)
+2. create a config.json file
+
+```json
+{
+  "repo-blacklist": [],
+  "developer-blacklist": [],
+  "verified": [],
+  "minimum_minecraft_version": null,
+  "ignore_archived": false,
+  "ignore_forks": false
+}
+```
+
 3. Run the following command
 
 ```bash
-scanner <output.json> <readme.md>
-```
-
-Example:
-```bash
-scanner addons.json README.md
+scanner config.json addons.json
 ```
 
 ## Output
@@ -34,6 +41,7 @@ scanner addons.json README.md
       "modules": ["string"],
       "commands": ["string"],
       "hud_elements": ["string"],
+      "custom_screens": ["string"],
       "feature_count": 0
     },
     "verified": false,
@@ -52,6 +60,7 @@ scanner addons.json README.md
       "github": "string",
       "downloads": ["asset-1", "asset-2"],
       "discord": "string",
+      "latest_release": "string",
       "homepage": "string",
       "icon": "string"
     },

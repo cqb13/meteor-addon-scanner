@@ -17,7 +17,7 @@ func detectVariable(source string, pattern string) string {
 	if len(match) >= 2 {
 		return match[1]
 	}
-	return "" // fallback to default pattern
+	return ""
 }
 
 func findFeatures(fullName string, defaultBranch string, entrypoint string) (Features, error) {
@@ -36,7 +36,7 @@ func findFeatures(fullName string, defaultBranch string, entrypoint string) (Fea
 	systemsVar := detectVariable(source, `(?m)\bSystems\s+(\w+)\s*=\s*Systems\.get\(\);`)
 	tabsVar := detectVariable(source, `(?m)\bTabs\s+(\w+)\s*=\s*Tabs\.get\(\);`)
 
-	// Build flexible patterns for modules (including Systems.add)
+	// recognizes added modules
 	modulePattern := `(?m)(Modules\.get\(\)|Systems\.get\(Modules\.class\)|Systems\.add\(`
 	if moduleVar != "" {
 		modulePattern += `|` + regexp.QuoteMeta(moduleVar)
@@ -47,20 +47,19 @@ func findFeatures(fullName string, defaultBranch string, entrypoint string) (Fea
 	modulePattern += `)\.add\(\s*new\s+([A-Z][A-Za-z0-9_]+)\s*\(.*?\)\s*\);?`
 
 	// Pattern for variable-based registration: Type var = new Type(); X.add(var);
-	// Note: Go's RE2 doesn't support backreferences, so we match the pattern and verify manually
 	varRegisterPattern := `(?m)([A-Z][A-Za-z0-9_]+)\s+(\w+)\s*=\s*new\s+([A-Z][A-Za-z0-9_]+)\s*\(.*?\)\s*;[\s\S]{0,200}?(Modules\.get\(\)|Commands|Systems)\.add\(\s*(\w+)\s*\)`
 
-	// HUD pattern (including Hud.add)
+	// recognizes added hud elements
 	hudPattern := `(?m)(Hud\.get\(\)|Systems\.get\(Hud\.class\)|Hud\.add\(`
 	if hudVar != "" {
 		hudPattern += `|` + regexp.QuoteMeta(hudVar)
 	}
 	hudPattern += `)\.register\((\w+)\.INFO\);`
 
-	// Commands pattern (inline new and variable-based)
+	// recognizes added commands
 	commandPattern := `(?m)Commands\.add\(\s*new\s+([A-Z][A-Za-z0-9_]+)\s*\(.*?\)\s*\);?`
 
-	// Tabs pattern - matches both Tabs.add() and Tabs.get().add()
+	// recognizes added tabs
 	tabPattern := `(?m)(Tabs\.get\(\)\.add|Tabs\.add`
 	if tabsVar != "" {
 		tabPattern += `|` + regexp.QuoteMeta(tabsVar) + `\.add`

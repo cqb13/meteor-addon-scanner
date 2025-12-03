@@ -28,7 +28,6 @@ var rateLimits struct {
 }
 
 func init() {
-	// Initialize with default values
 	rateLimits.Search = RateLimitTracker{Remaining: 30, Reset: time.Now()}
 	rateLimits.Core = RateLimitTracker{Remaining: 5000, Reset: time.Now()}
 }
@@ -156,10 +155,8 @@ func MakeGetRequest(url string) ([]byte, error) {
 		resourceType = apiType
 	}
 
-	// Get the correct tracker for this resource
 	tracker = getRateLimitTracker(resourceType)
 
-	// Update from response headers
 	if remaining := resp.Header.Get("X-RateLimit-Remaining"); remaining != "" {
 		fmt.Sscanf(remaining, "%d", &tracker.Remaining)
 	}
@@ -171,12 +168,10 @@ func MakeGetRequest(url string) ([]byte, error) {
 
 	rateLimits.mu.Unlock()
 
-	// Handle rate limit exceeded - return error to trigger retry
 	if resp.StatusCode == 403 && tracker.Remaining == 0 {
 		return nil, fmt.Errorf("GitHub API rate limit exceeded for %s", resourceType)
 	}
 
-	// Read and return response body
 	bytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err

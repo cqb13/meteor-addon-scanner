@@ -6,56 +6,43 @@ import (
 	"sync"
 )
 
-// isActualTemplate determines if an addon is truly just a template with no real content
+// determines if an addon is truly just a template with no real content
 // by checking if ALL features contain "Example" (case-insensitive)
 func isActualTemplate(features Features) bool {
-	// If no features at all, it's a template
 	if features.FeatureCount == 0 {
 		return true
 	}
 
-	// Check if ALL features contain "Example" (case-insensitive)
-	// If ANY feature does NOT contain "Example", it's a real addon
-
-	// Check modules
 	for _, module := range features.Modules {
 		if !strings.Contains(strings.ToLower(module), "example") {
 			return false
 		}
 	}
 
-	// Check commands
 	for _, cmd := range features.Commands {
 		if !strings.Contains(strings.ToLower(cmd), "example") {
 			return false
 		}
 	}
 
-	// Check HUD elements
 	for _, hud := range features.HudElements {
 		if !strings.Contains(strings.ToLower(hud), "example") {
 			return false
 		}
 	}
 
-	// Check custom screens
 	for _, screen := range features.CustomScreens {
 		if !strings.Contains(strings.ToLower(screen), "example") {
 			return false
 		}
 	}
 
-	// All features contain "Example" = template
 	return true
 }
 
 func findVersion(fullName string, defaultBranch string) (string, error) {
-	parts := strings.Split(fullName, "/")
-	if len(parts) != 2 {
-		return "", fmt.Errorf("Invalid repo name format")
-	}
-
-	minecraftVersion, _ := parseGradleVersions(parts[0], parts[1], defaultBranch)
+	//TODO: plz remove finding meteor version, as it is unused
+	minecraftVersion, _ := getMinecraftAndMeteorVersions(fullName, defaultBranch)
 
 	if minecraftVersion == "" {
 		return "", fmt.Errorf("Could not find Minecraft version")
@@ -75,13 +62,11 @@ func ParseRepo(fullName string) (*Addon, error) {
 		return nil, err
 	}
 
-	// Normalize entrypoints and authors
 	meteorEntries := normalizeMeteorEntrypoints(fabricModJson.Entrypoints.Meteor)
 	if len(meteorEntries) == 0 {
 		return nil, fmt.Errorf("Missing meteor entrypoint")
 	}
 
-	// ensure a description is present
 	description := repo.Description
 	if description == "" {
 		description = fabricModJson.Description
@@ -168,7 +153,6 @@ func ParseRepo(fullName string) (*Addon, error) {
 }
 
 func ParseRepos(repos map[string]bool, verifiedRepos []string) *ScanResult {
-	// Create verified set for O(1) lookup
 	verifiedSet := make(map[string]bool)
 	for _, repo := range verifiedRepos {
 		verifiedSet[strings.ToLower(repo)] = true
@@ -180,7 +164,6 @@ func ParseRepos(repos map[string]bool, verifiedRepos []string) *ScanResult {
 	var invalidMutex sync.Mutex
 	var wg sync.WaitGroup
 
-	// Semaphore for concurrency control (10 concurrent goroutines)
 	semaphore := make(chan struct{}, 10)
 
 	for repo := range repos {
@@ -189,11 +172,8 @@ func ParseRepos(repos map[string]bool, verifiedRepos []string) *ScanResult {
 		go func(repoName string) {
 			defer wg.Done()
 
-			// Acquire semaphore
 			semaphore <- struct{}{}
-			defer func() { <-semaphore }() // Release semaphore
-
-			fmt.Printf("\tParsing: %s\n", repoName)
+			defer func() { <-semaphore }()
 
 			addon, err := ParseRepo(repoName)
 			if err != nil {
@@ -204,20 +184,17 @@ func ParseRepos(repos map[string]bool, verifiedRepos []string) *ScanResult {
 					Reason: err.Error(),
 				})
 				invalidMutex.Unlock()
-				fmt.Printf("\t\tFailed to parse %s: %v\n", repoName, err)
+				fmt.Printf("\tFailed to parse %s: %v\n", repoName, err)
 				return
 			}
 
-			// If addon is nil (template skip), silently skip without adding to invalid
 			if addon == nil {
-				fmt.Printf("\t\tSkipped template: %s\n", repoName)
+				fmt.Printf("\tSkipped template: %s\n", repoName)
 				return
 			}
 
-			// Set verified status
 			addon.Verified = verifiedSet[strings.ToLower(repoName)]
 
-			// Thread-safe append
 			addonsMutex.Lock()
 			addons = append(addons, addon)
 			addonsMutex.Unlock()

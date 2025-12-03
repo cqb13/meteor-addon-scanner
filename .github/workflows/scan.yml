@@ -8,10 +8,10 @@ on:
   push:
     paths:
       - "verified.txt"
-      - ".github/workflows/addons.yml"
+      - ".github/workflows/scan.yml"
       - "**/*.go"
   schedule:
-    - cron: "0 21 * * *" # runs at 4pm est
+    - cron: "0 21 * * *"
   workflow_dispatch:
 
 jobs:
@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: write  # Required to push to branches
+      contents: write # Required to push to branches
 
     steps:
       - name: Checkout Repository
@@ -37,7 +37,7 @@ jobs:
         run: rm -rf data && mkdir -p data
 
       - name: Run scanner and generate files
-        run: go run . data/addons.json data/README.md
+        run: go run . config.json data/addons.json
         env:
           KEY: ${{ secrets.KEY }}
 
@@ -55,11 +55,10 @@ jobs:
 
           # Copy the generated files
           cp data/addons.json addons.json
-          cp data/README.md README.md
 
           # Add and commit
-          git add addons.json README.md
-          git commit -m "Update addons data - $(date -u +'%Y-%m-%d %H:%M:%S UTC')" || echo "No changes to commit"
+          git add addons.json
+          git commit -m "updated addons" || echo "No changes to commit"
 
           # Push to addons branch
           git push origin addons --force

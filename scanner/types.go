@@ -142,13 +142,13 @@ type repository struct {
 }
 
 type fabric struct {
-	Id          string      `json:"id"`
-	Name        string      `json:"name"`
-	Description string      `json:"description"`
-	Authors     interface{} `json:"authors"`
-	Icon        string      `json:"icon"`
+	Id          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Authors     any    `json:"authors"`
+	Icon        string `json:"icon"`
 	Entrypoints struct {
-		Meteor interface{} `json:"meteor"`
+		Meteor any `json:"meteor"`
 	} `json:"entrypoints"`
 }
 

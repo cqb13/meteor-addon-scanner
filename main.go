@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -13,8 +14,8 @@ import (
 
 type Config struct {
 	MinimumMinecraftVersion *string  `json:"minimum_minecraft_version"`
-	RepoBlacklist           []string `json:"repo-blacklist"`
-	DeveloperBlacklist      []string `json:"developer-blacklist"`
+	BlacklistedRepos        []string `json:"repo-blacklist"`
+	BlacklistedDevs         []string `json:"developer-blacklist"`
 	Verified                []string `json:"verified"`
 	IgnoreArchived          bool     `json:"ignore_archived"`
 	IgnoreForks             bool     `json:"ignore_forks"`
@@ -36,6 +37,22 @@ func loadConfig(path string) (*Config, error) {
 	return &config, nil
 }
 
+func validateConfigPath(path string) error {
+	if !strings.HasSuffix(path, ".json") {
+		return fmt.Errorf("Path must lead to a json file")
+	}
+
+	if _, err := filepath.Abs(path); err != nil {
+		return fmt.Errorf("'%v' is not a valid path: %v", path, err)
+	}
+
+	if _, err := os.Stat(path); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("Failed to read stats for '%v'", path)
+	}
+
+	return nil
+}
+
 func validateOutputPath(output string) error {
 	if !strings.HasSuffix(output, ".json") {
 		return fmt.Errorf("Output path must lead to a json file")
@@ -53,12 +70,12 @@ func main() {
 	args := os.Args
 
 	if len(args) < 3 {
-		fmt.Println("Usage: meteor-addon-scanner <output.json> <readme.md>")
+		fmt.Println("Not enough argument provided: config.json output.json")
 		return
 	}
 
-	outputPath := args[1]
-	readmePath := args[2]
+	configPath := args[1]
+	outputPath := args[2]
 
 	err := validateOutputPath(outputPath)
 	if err != nil {
@@ -66,7 +83,12 @@ func main() {
 		return
 	}
 
-	// Load config.json
+	err = validateConfigPath(configPath)
+	if err != nil {
+		fmt.Printf("Verified: %s\n", err)
+		return
+	}
+
 	config, err := loadConfig("config.json")
 	if err != nil {
 		fmt.Printf("Failed to load config: %s\n", err)
@@ -91,33 +113,33 @@ func main() {
 	repos := scanner.Locate(config.Verified)
 	fmt.Printf("Located %v repos\n", len(repos))
 
-	// Apply repo blacklist
 	removed := 0
-	for _, repo := range config.RepoBlacklist {
-		_, ok := repos[repo]
-		if ok {
-			delete(repos, repo)
-			removed++
-		}
-	}
-	fmt.Printf("Removed %d/%d repo blacklisted repositories\n", removed, len(config.RepoBlacklist))
+	for _, repo := range config.BlacklistedRepos {
+		lower := strings.ToLower(repo)
 
-	// Apply developer blacklist
-	developerRemoved := 0
-	for repoName := range repos {
-		// Extract owner from "owner/repo" format
-		parts := strings.Split(repoName, "/")
-		if len(parts) == 2 {
-			owner := strings.ToLower(parts[0])
-			for _, blacklistedDev := range config.DeveloperBlacklist {
-				if owner == strings.ToLower(blacklistedDev) {
-					delete(repos, repoName)
-					developerRemoved++
-					break
-				}
+		for fullName := range repos {
+			if strings.ToLower(fullName) == lower {
+				delete(repos, fullName)
+				removed++
+				break
 			}
 		}
 	}
+	fmt.Printf("Removed %d/%d repo blacklisted repositories\n", removed, len(config.BlacklistedRepos))
+
+	developerRemoved := 0
+	for _, dev := range config.BlacklistedDevs {
+		lower := strings.ToLower(dev)
+
+		for fullName := range repos {
+			if strings.HasPrefix(strings.ToLower(fullName), lower) {
+				delete(repos, fullName)
+				developerRemoved++
+				break
+			}
+		}
+	}
+
 	fmt.Printf("Removed %d repositories from blacklisted developers\n", developerRemoved)
 
 	fmt.Println("Parsing Repositories")
@@ -152,7 +174,6 @@ func main() {
 		}
 	}
 
-	// Marshal result to JSON (minified)
 	jsonData, err := json.Marshal(result)
 	if err != nil {
 		fmt.Printf("Failed to convert addons to JSON: %v\n", err)
@@ -172,7 +193,6 @@ func main() {
 		return
 	}
 
-	// Count archived addons for summary
 	archivedCount := 0
 	for _, addon := range result.Addons {
 		if addon.Repo.Archived {
@@ -180,22 +200,12 @@ func main() {
 		}
 	}
 
-	// Print summary statistics
 	executionTime := time.Since(startTime).Seconds()
 	fmt.Printf("\nStatistics:\n")
 	fmt.Printf("  Valid Addons: %d\n", len(result.Addons))
 	fmt.Printf("  Archived: %d\n", archivedCount)
 	fmt.Printf("  Invalid: %d\n", len(result.InvalidAddons))
 	fmt.Printf("  Execution Time: %.2fs\n", executionTime)
-
-	// Generate README
-	fmt.Println("\nGenerating README...")
-	err = scanner.GenerateReadme(result, readmePath, executionTime)
-	if err != nil {
-		fmt.Printf("Failed to generate README: %v\n", err)
-		return
-	}
-	fmt.Printf("README generated at %s\n", readmePath)
 
 	fmt.Println("Done!")
 }

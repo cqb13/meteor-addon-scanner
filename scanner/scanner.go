@@ -9,10 +9,10 @@ import (
 )
 
 type InvalidAddon struct {
-	Name    string                 `json:"name"`
-	URL     string                 `json:"url"`
-	Reason  string                 `json:"reason"`
-	Details map[string]interface{} `json:"details,omitempty"`
+	Name    string         `json:"name"`
+	URL     string         `json:"url"`
+	Reason  string         `json:"reason"`
+	Details map[string]any `json:"details,omitempty"`
 }
 
 type ScanResult struct {
@@ -215,3 +215,4 @@ func Locate(verifiedAddons []string) map[string]bool {
 
 	return repos
 }
+

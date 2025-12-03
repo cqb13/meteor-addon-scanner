@@ -1,12 +1,9 @@
 {
-  "minimum_minecraft_version": null,
   "repo-blacklist": [
     "asteroide-development/Asteroide",
     "creed27-tech/Saturn-Addon-1.21.4"
   ],
-  "developer-blacklist": [
-    "gottasweep"
-  ],
+  "developer-blacklist": ["gottasweep"],
   "verified": [
     "AntiCope/meteor-rejects",
     "AntiCope/orion",
@@ -45,6 +42,7 @@
     "Julflips/nerv-printer-addon",
     "MCDxAI/meteor-mcp-addon"
   ],
-  "ignore_archived": true,
+  "minimum_minecraft_version": null,
+  "ignore_archived": false,
   "ignore_forks": false
 }

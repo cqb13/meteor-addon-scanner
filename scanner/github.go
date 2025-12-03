@@ -7,19 +7,19 @@ import (
 	"strings"
 )
 
-// normalizeAuthors converts various author formats to []string
-func normalizeAuthors(authors interface{}) []string {
+// converts various author formats to []string
+func normalizeAuthors(authors any) []string {
 	if authors == nil {
 		return []string{}
 	}
 
 	switch v := authors.(type) {
-	case []interface{}:
+	case []any:
 		result := make([]string, 0, len(v))
 		for _, author := range v {
 			if str, ok := author.(string); ok {
 				result = append(result, str)
-			} else if m, ok := author.(map[string]interface{}); ok {
+			} else if m, ok := author.(map[string]any); ok {
 				// Handle object format like {"name": "AuthorName"}
 				if name, ok := m["name"].(string); ok {
 					result = append(result, name)
@@ -38,14 +38,14 @@ func normalizeAuthors(authors interface{}) []string {
 	}
 }
 
-// normalizeMeteorEntrypoints converts various entrypoint formats to []string
-func normalizeMeteorEntrypoints(meteor interface{}) []string {
+// converts various entrypoint formats to []string
+func normalizeMeteorEntrypoints(meteor any) []string {
 	if meteor == nil {
 		return []string{}
 	}
 
 	switch v := meteor.(type) {
-	case []interface{}:
+	case []any:
 		result := make([]string, 0, len(v))
 		for _, entry := range v {
 			if str, ok := entry.(string); ok {
@@ -59,13 +59,13 @@ func normalizeMeteorEntrypoints(meteor interface{}) []string {
 	case []string:
 		// Already correct format
 		return v
-	case map[string]interface{}:
+	case map[string]any:
 		// Handle map format - extract values
 		result := make([]string, 0, len(v))
 		for _, entry := range v {
 			if str, ok := entry.(string); ok {
 				result = append(result, str)
-			} else if arr, ok := entry.([]interface{}); ok {
+			} else if arr, ok := entry.([]any); ok {
 				for _, item := range arr {
 					if str, ok := item.(string); ok {
 						result = append(result, str)
@@ -111,13 +111,12 @@ func getFabricModJson(fullName string, defaultBranch string) (*fabric, string, e
 
 	err = json.Unmarshal(bytes, &fabricModJson)
 	if err != nil {
-		return nil, "", fmt.Errorf("Invalid fabric.mod.json structure: %v", err)
+		return nil, "", fmt.Errorf("Invalid fabric.mod.json structure: %w", err)
 	}
 
-	// Normalize meteor entrypoints
 	meteorEntries := normalizeMeteorEntrypoints(fabricModJson.Entrypoints.Meteor)
 	if len(meteorEntries) == 0 {
-		return nil, "", fmt.Errorf("No meteor entrypoint found in fabric.mod.json - not a Meteor addon")
+		return nil, "", fmt.Errorf("No meteor entrypoint found in fabric.mod.json")
 	}
 
 	return &fabricModJson, string(bytes), nil
