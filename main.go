@@ -13,12 +13,18 @@ import (
 )
 
 type Config struct {
-	MinimumMinecraftVersion *string  `json:"minimum_minecraft_version"`
 	BlacklistedRepos        []string `json:"repo-blacklist"`
 	BlacklistedDevs         []string `json:"developer-blacklist"`
 	Verified                []string `json:"verified"`
+	MinimumMinecraftVersion *string  `json:"minimum_minecraft_version"`
 	IgnoreArchived          bool     `json:"ignore_archived"`
 	IgnoreForks             bool     `json:"ignore_forks"`
+	SuspicionTriggers       struct {
+		NameLength        int `json:"name_len"`
+		DescriptionLength int `json:"description_len"`
+		FeatureCount      int `json:"feature_count"`
+		SupportedVersions int `json:"supported_versions"`
+	} `json:"suspicion_triggers"`
 }
 
 func loadConfig(path string) (*Config, error) {
@@ -146,7 +152,7 @@ func main() {
 	addons := scanner.ParseRepos(repos, config.Verified)
 	fmt.Printf("Found %d/%d valid addons\n", len(addons), len(repos))
 
-	fmt.Println("Validating Forked Verified Addons")
+	fmt.Println("Validating forked verified addons")
 	for _, addon := range addons {
 		if !addon.Verified || !addon.Repo.Fork {
 			continue
@@ -172,6 +178,44 @@ func main() {
 			addon.Verified = false
 			continue
 		}
+	}
+
+	fmt.Println("Checking for suspicious addons")
+	suspicious := make(map[string][]string)
+	for _, addon := range addons {
+		reasons := make([]string, 0)
+
+		if len(addon.Name) >= config.SuspicionTriggers.NameLength {
+			reasons = append(reasons, fmt.Sprintf("[Exceeding name length (%d)]", len(addon.Name)))
+		}
+
+		if len(addon.Description) >= config.SuspicionTriggers.DescriptionLength {
+			reasons = append(reasons, fmt.Sprintf("[Exceeding github description length (%d)]", len(addon.Description)))
+		}
+
+		if len(addon.Custom.Description) >= config.SuspicionTriggers.DescriptionLength {
+			reasons = append(reasons, fmt.Sprintf("[Exceeding custom description length (%d)]", len(addon.Custom.Description)))
+		}
+
+		if addon.Features.FeatureCount >= config.SuspicionTriggers.FeatureCount {
+			reasons = append(reasons, fmt.Sprintf("[Exceeding feature limit (%d)]", addon.Features.FeatureCount))
+		}
+
+		if len(addon.Custom.SupportedVersions) >= config.SuspicionTriggers.SupportedVersions {
+			reasons = append(reasons, fmt.Sprintf("[Exceeding supported version limit (%d)]", len(addon.Custom.SupportedVersions)))
+		}
+
+		if len(reasons) > 0 {
+			suspicious[addon.Repo.Id] = reasons
+		}
+	}
+
+	if len(suspicious) == 0 {
+		fmt.Println("Found no suspicious addons")
+	}
+
+	for repo, reasons := range suspicious {
+		fmt.Printf("\t%s: %s\n", repo, strings.Join(reasons, ", "))
 	}
 
 	jsonData, err := json.Marshal(addons)

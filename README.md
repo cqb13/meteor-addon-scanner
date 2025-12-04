@@ -18,7 +18,13 @@ Check out the [Meteor Addon List](https://www.meteoraddons.com)
   "verified": [],
   "minimum_minecraft_version": null,
   "ignore_archived": false,
-  "ignore_forks": false
+  "ignore_forks": false,
+  "suspicion_triggers": {
+    "name_len": 50,
+    "description_len": 333,
+    "feature_count": 1000,
+    "supported_versions": 15
+  }
 }
 ```
 
