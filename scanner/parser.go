@@ -97,9 +97,9 @@ func ParseRepo(fullName string) (*Addon, error) {
 		return nil, err
 	}
 
-	// Template detection - check if id is "addon-template" AND all features contain "Example"
-	if fabricModJson.Id == "addon-template" && isActualTemplate(features) {
-		return nil, nil // Silently skip actual templates
+	// Template detection, but allow actual addon template
+	if fabricModJson.Id == "addon-template" && isActualTemplate(features) && strings.ToLower(repo.FullName) != "meteordevelopment/meteor-addon-template" {
+		return nil, nil
 	}
 
 	version, err := findVersion(fullName, repo.DefaultBranch)
