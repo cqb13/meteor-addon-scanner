@@ -151,16 +151,14 @@ func ParseRepo(fullName string) (*Addon, error) {
 	return &addon, nil
 }
 
-func ParseRepos(repos map[string]bool, verifiedRepos []string) *ScanResult {
+func ParseRepos(repos map[string]bool, verifiedRepos []string) []*Addon {
 	verifiedSet := make(map[string]bool)
 	for _, repo := range verifiedRepos {
 		verifiedSet[strings.ToLower(repo)] = true
 	}
 
 	var addons []*Addon
-	var invalidAddons []InvalidAddon
 	var addonsMutex sync.Mutex
-	var invalidMutex sync.Mutex
 	var wg sync.WaitGroup
 
 	semaphore := make(chan struct{}, 10)
@@ -176,13 +174,6 @@ func ParseRepos(repos map[string]bool, verifiedRepos []string) *ScanResult {
 
 			addon, err := ParseRepo(repoName)
 			if err != nil {
-				invalidMutex.Lock()
-				invalidAddons = append(invalidAddons, InvalidAddon{
-					Name:   repoName,
-					URL:    fmt.Sprintf("https://github.com/%s", repoName),
-					Reason: err.Error(),
-				})
-				invalidMutex.Unlock()
 				fmt.Printf("\tFailed to parse %s: %v\n", repoName, err)
 				return
 			}
@@ -202,8 +193,5 @@ func ParseRepos(repos map[string]bool, verifiedRepos []string) *ScanResult {
 
 	wg.Wait()
 
-	return &ScanResult{
-		Addons:        addons,
-		InvalidAddons: invalidAddons,
-	}
+	return addons
 }

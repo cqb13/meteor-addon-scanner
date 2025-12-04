@@ -15,11 +15,6 @@ type InvalidAddon struct {
 	Details map[string]any `json:"details,omitempty"`
 }
 
-type ScanResult struct {
-	Addons        []*Addon       `json:"addons"`
-	InvalidAddons []InvalidAddon `json:"invalid_addons"`
-}
-
 var repos = make(map[string]bool)
 
 const reposPerPage int = 100

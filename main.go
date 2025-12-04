@@ -143,11 +143,11 @@ func main() {
 	fmt.Printf("Removed %d repositories from blacklisted developers\n", developerRemoved)
 
 	fmt.Println("Parsing Repositories")
-	result := scanner.ParseRepos(repos, config.Verified)
-	fmt.Printf("Found %d/%d valid addons\n", len(result.Addons), len(repos))
+	addons := scanner.ParseRepos(repos, config.Verified)
+	fmt.Printf("Found %d/%d valid addons\n", len(addons), len(repos))
 
 	fmt.Println("Validating Forked Verified Addons")
-	for _, addon := range result.Addons {
+	for _, addon := range addons {
 		if !addon.Verified || !addon.Repo.Fork {
 			continue
 		}
@@ -174,7 +174,7 @@ func main() {
 		}
 	}
 
-	jsonData, err := json.Marshal(result)
+	jsonData, err := json.Marshal(addons)
 	if err != nil {
 		fmt.Printf("Failed to convert addons to JSON: %v\n", err)
 		return
@@ -194,7 +194,7 @@ func main() {
 	}
 
 	archivedCount := 0
-	for _, addon := range result.Addons {
+	for _, addon := range addons {
 		if addon.Repo.Archived {
 			archivedCount++
 		}
@@ -202,9 +202,9 @@ func main() {
 
 	executionTime := time.Since(startTime).Seconds()
 	fmt.Printf("Statistics:\n")
-	fmt.Printf("  Valid Addons: %d\n", len(result.Addons))
+	fmt.Printf("  Valid Addons: %d\n", len(addons))
 	fmt.Printf("  Archived: %d\n", archivedCount)
-	fmt.Printf("  Invalid: %d\n", len(result.InvalidAddons))
+	fmt.Printf("  Invalid: %d\n", len(repos)-len(addons))
 	minutes := int(executionTime) / 60
 	seconds := int(executionTime) % 60
 	fmt.Printf("  Execution Time: %d.%02d\n", minutes, seconds)
