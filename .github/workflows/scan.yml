@@ -8,15 +8,18 @@ on:
   push:
     paths:
       - "verified.txt"
-      - ".github/workflows/addons.yml"
+      - ".github/workflows/scan.yml"
       - "**/*.go"
   schedule:
-    - cron: "0 21 * * *" # runs at 4pm est
+    - cron: "0 21 * * *"
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: write # Required to push to branches
 
     steps:
       - name: Checkout Repository
@@ -30,18 +33,32 @@ jobs:
       - name: Install Go dependencies
         run: go mod tidy
 
-      - name: Remove old addons.json
-        run: rm -f addons.json
+      - name: Remove old output files
+        run: rm -rf data && mkdir -p data
 
-      - name: Run Go program
-        run: go run . config.json addons.json
+      - name: Run scanner and generate files
+        run: go run . config.json data/addons.json
         env:
           KEY: ${{ secrets.KEY }}
 
-      - name: Commit updated addons.json
+      - name: Deploy to addons branch
         run: |
-          git config user.name "cqb13"
-          git config user.email "null"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Create addons branch if it doesn't exist
+          git fetch origin addons || git checkout --orphan addons
+
+          # If branch exists, checkout and clean it
+          git checkout addons 2>/dev/null || git checkout --orphan addons
+          git rm -rf . || true
+
+          # Copy the generated files
+          cp data/addons.json addons.json
+
+          # Add and commit
           git add addons.json
-          git commit -m 'updated addons' || echo
-          git push --force
+          git commit -m "updated addons" || echo "No changes to commit"
+
+          # Push to addons branch
+          git push origin addons --force

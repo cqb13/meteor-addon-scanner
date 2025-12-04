@@ -15,7 +15,10 @@ Check out the [Meteor Addon List](https://www.meteoraddons.com)
 {
   "repo-blacklist": [],
   "developer-blacklist": [],
-  "verified": []
+  "verified": [],
+  "minimum_minecraft_version": null,
+  "ignore_archived": false,
+  "ignore_forks": false
 }
 ```
 
@@ -38,6 +41,7 @@ scanner config.json addons.json
       "modules": ["string"],
       "commands": ["string"],
       "hud_elements": ["string"],
+      "custom_screens": ["string"],
       "feature_count": 0
     },
     "verified": false,
@@ -56,6 +60,7 @@ scanner config.json addons.json
       "github": "string",
       "downloads": ["asset-1", "asset-2"],
       "discord": "string",
+      "latest_release": "string",
       "homepage": "string",
       "icon": "string"
     },

@@ -41,5 +41,8 @@
     "JuusK/MeteorExtras",
     "Julflips/nerv-printer-addon",
     "MCDxAI/meteor-mcp-addon"
-  ]
+  ],
+  "minimum_minecraft_version": null,
+  "ignore_archived": false,
+  "ignore_forks": false
 }

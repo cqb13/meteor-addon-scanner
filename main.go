@@ -4,18 +4,37 @@ import (
 	"dev/cqb13/meteor-addon-scanner/scanner"
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/joho/godotenv"
 )
 
-type config struct {
-	BlacklistedRepos []string `json:"repo-blacklist"`
-	BlacklistedDevs  []string `json:"developer-blacklist"`
-	VerifiedAddons   []string `json:"verified"`
+type Config struct {
+	MinimumMinecraftVersion *string  `json:"minimum_minecraft_version"`
+	BlacklistedRepos        []string `json:"repo-blacklist"`
+	BlacklistedDevs         []string `json:"developer-blacklist"`
+	Verified                []string `json:"verified"`
+	IgnoreArchived          bool     `json:"ignore_archived"`
+	IgnoreForks             bool     `json:"ignore_forks"`
+}
+
+func loadConfig(path string) (*Config, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to open config file: %v", err)
+	}
+	defer file.Close()
+
+	var config Config
+	decoder := json.NewDecoder(file)
+	if err := decoder.Decode(&config); err != nil {
+		return nil, fmt.Errorf("Failed to parse config file: %v", err)
+	}
+
+	return &config, nil
 }
 
 func validateConfigPath(path string) error {
@@ -34,35 +53,9 @@ func validateConfigPath(path string) error {
 	return nil
 }
 
-func loadConfig(path string) (*config, error) {
-	fp, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer fp.Close()
-
-	bytes, err := io.ReadAll(fp)
-	if err != nil {
-		return nil, err
-	}
-
-	var cfg config
-
-	err = json.Unmarshal(bytes, &cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	return &cfg, nil
-}
-
 func validateOutputPath(output string) error {
 	if !strings.HasSuffix(output, ".json") {
 		return fmt.Errorf("Output path must lead to a json file")
-	}
-
-	if _, err := filepath.Abs(output); err != nil {
-		return fmt.Errorf("'%v' is not a valid path: %v", output, err)
 	}
 
 	if _, err := os.Stat(output); err == nil {
@@ -73,6 +66,7 @@ func validateOutputPath(output string) error {
 }
 
 func main() {
+	startTime := time.Now()
 	args := os.Args
 
 	if len(args) < 3 {
@@ -83,24 +77,25 @@ func main() {
 	configPath := args[1]
 	outputPath := args[2]
 
-	err := validateConfigPath(configPath)
+	err := validateOutputPath(outputPath)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	err = validateConfigPath(configPath)
 	if err != nil {
 		fmt.Printf("Verified: %s\n", err)
 		return
 	}
 
-	err = validateOutputPath(outputPath)
+	config, err := loadConfig("config.json")
 	if err != nil {
-		fmt.Println(err)
+		fmt.Printf("Failed to load config: %s\n", err)
 		return
 	}
 
-	cfg, err := loadConfig(configPath)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
+	// Load .env file
 	if _, err := os.Stat(".env"); err == nil {
 		err = godotenv.Load()
 		if err != nil {
@@ -115,11 +110,11 @@ func main() {
 	scanner.InitDefaultHeaders(key)
 
 	fmt.Println("Locating Repositories")
-	repos := scanner.Locate(cfg.VerifiedAddons)
+	repos := scanner.Locate(config.Verified)
 	fmt.Printf("Located %v repos\n", len(repos))
 
 	removed := 0
-	for _, repo := range cfg.BlacklistedRepos {
+	for _, repo := range config.BlacklistedRepos {
 		lower := strings.ToLower(repo)
 
 		for fullName := range repos {
@@ -130,39 +125,41 @@ func main() {
 			}
 		}
 	}
+	fmt.Printf("Removed %d/%d repo blacklisted repositories\n", removed, len(config.BlacklistedRepos))
 
-	for _, dev := range cfg.BlacklistedDevs {
+	developerRemoved := 0
+	for _, dev := range config.BlacklistedDevs {
 		lower := strings.ToLower(dev)
 
 		for fullName := range repos {
 			if strings.HasPrefix(strings.ToLower(fullName), lower) {
 				delete(repos, fullName)
-				removed++
+				developerRemoved++
 				break
 			}
 		}
 	}
 
-	fmt.Printf("Removed %d black listed repositories\n", removed)
+	fmt.Printf("Removed %d repositories from blacklisted developers\n", developerRemoved)
 
 	fmt.Println("Parsing Repositories")
-	addons := scanner.ParseRepos(repos)
-	fmt.Printf("Found %d/%d valid addons\n", len(addons), len(repos))
+	result := scanner.ParseRepos(repos, config.Verified)
+	fmt.Printf("Found %d/%d valid addons\n", len(result.Addons), len(repos))
 
 	fmt.Println("Validating Forked Verified Addons")
-	for _, addon := range addons {
+	for _, addon := range result.Addons {
 		if !addon.Verified || !addon.Repo.Fork {
 			continue
 		}
 
-		result, err := scanner.ValidateForkedVerifiedAddons(*addon)
+		validationResult, err := scanner.ValidateForkedVerifiedAddons(*addon)
 		if err != nil {
 			fmt.Printf("\tFailed to validate forked verified addon: %v\n", err)
 			continue
 		}
 
 		fmt.Printf("\t %s: ", addon.Repo.Id)
-		switch result {
+		switch validationResult {
 		case scanner.Valid:
 			fmt.Printf("Is valid\n")
 			continue
@@ -177,7 +174,7 @@ func main() {
 		}
 	}
 
-	jsonData, err := json.Marshal(addons)
+	jsonData, err := json.Marshal(result)
 	if err != nil {
 		fmt.Printf("Failed to convert addons to JSON: %v\n", err)
 		return
@@ -185,7 +182,7 @@ func main() {
 
 	file, err := os.Create(outputPath)
 	if err != nil {
-		fmt.Printf("Failed to create output file: %v\b", err)
+		fmt.Printf("Failed to create output file: %v\n", err)
 		return
 	}
 	defer file.Close()
@@ -195,6 +192,22 @@ func main() {
 		fmt.Println("Error writing to file:", err)
 		return
 	}
+
+	archivedCount := 0
+	for _, addon := range result.Addons {
+		if addon.Repo.Archived {
+			archivedCount++
+		}
+	}
+
+	executionTime := time.Since(startTime).Seconds()
+	fmt.Printf("Statistics:\n")
+	fmt.Printf("  Valid Addons: %d\n", len(result.Addons))
+	fmt.Printf("  Archived: %d\n", archivedCount)
+	fmt.Printf("  Invalid: %d\n", len(result.InvalidAddons))
+	minutes := int(executionTime) / 60
+	seconds := int(executionTime) % 60
+	fmt.Printf("  Execution Time: %d.%02d\n", minutes, seconds)
 
 	fmt.Println("Done!")
 }

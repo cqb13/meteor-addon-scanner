@@ -8,6 +8,18 @@ import (
 	"time"
 )
 
+type InvalidAddon struct {
+	Name    string         `json:"name"`
+	URL     string         `json:"url"`
+	Reason  string         `json:"reason"`
+	Details map[string]any `json:"details,omitempty"`
+}
+
+type ScanResult struct {
+	Addons        []*Addon       `json:"addons"`
+	InvalidAddons []InvalidAddon `json:"invalid_addons"`
+}
+
 var repos = make(map[string]bool)
 
 const reposPerPage int = 100
@@ -19,7 +31,7 @@ func fetchBySearch(name string, url string) {
 	var page int = 1
 	fmt.Printf("\tFetching based on %v\n", name)
 	for {
-		if complete == true {
+		if complete {
 			break
 		}
 
@@ -28,11 +40,10 @@ func fetchBySearch(name string, url string) {
 			os.Exit(1)
 		}
 
-		fmt.Printf("\t")
-		SleepIfRateLimited(Search, false)
 		fmt.Printf("\t\tFetching Page %v -> ", page)
 		bytes, err := MakeGetRequest(fmt.Sprintf("%s%v", url, page))
 		if err != nil {
+			fmt.Printf("Error: %v (attempt %d/%d)\n", err, RetryAttempts-attempts+1, RetryAttempts)
 			attempts -= 1
 			continue
 		}
@@ -120,7 +131,7 @@ func fetchByForkOfTemplate() {
 	var page int = 1
 	fmt.Printf("\tFetching fokrs of template\n")
 	for {
-		if complete == true {
+		if complete {
 			break
 		}
 
@@ -128,11 +139,10 @@ func fetchByForkOfTemplate() {
 			fmt.Printf("Failed to make search request\n")
 			os.Exit(1)
 		}
-		fmt.Printf("\t")
-		SleepIfRateLimited(Search, false)
 		fmt.Printf("\t\tFetching Page %v -> ", page)
 		bytes, err := MakeGetRequest(fmt.Sprintf("%s%v", url, page))
 		if err != nil {
+			fmt.Printf("Error: %v (attempt %d/%d)\n", err, RetryAttempts-attempts+1, RetryAttempts)
 			attempts -= 1
 			continue
 		}
@@ -198,6 +208,8 @@ func Locate(verifiedAddons []string) map[string]bool {
 	fetchBySearch("meteor-client-addon topic", url)
 	url = fmt.Sprintf("https://api.github.com/search/repositories?q=meteor-addon+in:name,description&per_page=%d&page=", reposPerPage)
 	fetchBySearch("meteor-addon in name or description", url)
+	url = fmt.Sprintf("https://api.github.com/search/repositories?q=meteor-client+addon+in:description&per_page=%d&page=", reposPerPage)
+	fetchBySearch("meteor-client addon in description", url)
 
 	fetchByForkOfTemplate()
 
