@@ -110,6 +110,7 @@ func MakeHeadRequest(url string) (int, error) {
 		return 0, err
 	}
 	defer resp.Body.Close()
+
 	return resp.StatusCode, nil
 }
 
@@ -123,9 +124,10 @@ func MakeGetRequest(url string) ([]byte, error) {
 	if tracker.Remaining <= 1 && time.Now().Before(tracker.Reset) {
 		waitTime := time.Until(tracker.Reset)
 		if waitTime > 0 {
-			fmt.Printf("[%s] Rate limit reached. Waiting %v seconds...\n",
+			fmt.Printf("[%s] Rate limit reached. Waiting %v seconds...",
 				apiType, waitTime.Seconds())
 			time.Sleep(waitTime + 1*time.Second)
+			fmt.Printf(" -> ")
 		}
 	}
 	rateLimits.mu.Unlock()
@@ -160,6 +162,7 @@ func MakeGetRequest(url string) ([]byte, error) {
 	if remaining := resp.Header.Get("X-RateLimit-Remaining"); remaining != "" {
 		fmt.Sscanf(remaining, "%d", &tracker.Remaining)
 	}
+
 	if reset := resp.Header.Get("X-RateLimit-Reset"); reset != "" {
 		var timestamp int64
 		fmt.Sscanf(reset, "%d", &timestamp)

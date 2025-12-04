@@ -201,11 +201,13 @@ func main() {
 	}
 
 	executionTime := time.Since(startTime).Seconds()
-	fmt.Printf("\nStatistics:\n")
+	fmt.Printf("Statistics:\n")
 	fmt.Printf("  Valid Addons: %d\n", len(result.Addons))
 	fmt.Printf("  Archived: %d\n", archivedCount)
 	fmt.Printf("  Invalid: %d\n", len(result.InvalidAddons))
-	fmt.Printf("  Execution Time: %.2fs\n", executionTime)
+	minutes := int(executionTime) / 60
+	seconds := int(executionTime) % 60
+	fmt.Printf("  Execution Time: %d.%02d\n", minutes, seconds)
 
 	fmt.Println("Done!")
 }

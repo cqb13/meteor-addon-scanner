@@ -160,9 +160,9 @@ func getCustomProperties(fullName string, defaultBranch string) (*Custom, error)
 	var validTags []string
 
 	for _, tag := range customData.Tags {
-		exists, realTag := validTag(tag)
+		realTag, ok := validTag(tag)
 
-		if exists {
+		if ok {
 			validTags = append(validTags, realTag)
 		}
 	}

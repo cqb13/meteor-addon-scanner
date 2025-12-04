@@ -52,7 +52,6 @@ func compareMCVersions(v1, v2 string) bool {
 	parts1 := strings.Split(v1, ".")
 	parts2 := strings.Split(v2, ".")
 
-	// Compare each part numerically
 	maxLen := max(len(parts2), len(parts1))
 
 	for i := range maxLen {
@@ -119,18 +118,20 @@ func getReleaseDetails(fullName string) ([]string, string, int, error) {
 
 			if isStable && !foundStable {
 				for _, asset := range rel.Assets {
-					if isValidJarAsset(asset.Name) {
-						stableDownloads = append(stableDownloads, asset.Url)
+					if !isValidJarAsset(asset.Name) {
+						continue
+					}
 
-						// Extract MC version from filename and track highest version
-						mcVersion := extractMCVersionFromFilename(asset.Name)
-						if compareMCVersions(mcVersion, latestVersion) {
-							latestVersion = mcVersion
-							latestDownload = asset.Url
-						} else if latestDownload == "" {
-							// if no version detected, use first JAR
-							latestDownload = asset.Url
-						}
+					stableDownloads = append(stableDownloads, asset.Url)
+
+					// Extract MC version from filename and track highest version
+					mcVersion := extractMCVersionFromFilename(asset.Name)
+					if compareMCVersions(mcVersion, latestVersion) {
+						latestVersion = mcVersion
+						latestDownload = asset.Url
+					} else if latestDownload == "" {
+						// if no version detected, use first JAR
+						latestDownload = asset.Url
 					}
 				}
 				if len(stableDownloads) > 0 {
@@ -140,18 +141,20 @@ func getReleaseDetails(fullName string) ([]string, string, int, error) {
 
 			if !isStable && !foundPrerelease {
 				for _, asset := range rel.Assets {
-					if isValidJarAsset(asset.Name) {
-						prereleaseDownloads = append(prereleaseDownloads, asset.Url)
+					if !isValidJarAsset(asset.Name) {
+						continue
+					}
 
-						// Extract MC version from filename and track highest version
-						mcVersion := extractMCVersionFromFilename(asset.Name)
-						if compareMCVersions(mcVersion, latestVersion) {
-							latestVersion = mcVersion
-							latestDownload = asset.Url
-						} else if latestDownload == "" {
-							// if no version detected, use first JAR
-							latestDownload = asset.Url
-						}
+					prereleaseDownloads = append(prereleaseDownloads, asset.Url)
+
+					// Extract MC version from filename and track highest version
+					mcVersion := extractMCVersionFromFilename(asset.Name)
+					if compareMCVersions(mcVersion, latestVersion) {
+						latestVersion = mcVersion
+						latestDownload = asset.Url
+					} else if latestDownload == "" {
+						// if no version detected, use first JAR
+						latestDownload = asset.Url
 					}
 				}
 				if len(prereleaseDownloads) > 0 {

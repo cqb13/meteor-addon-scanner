@@ -162,7 +162,7 @@ type release struct {
 	} `json:"assets"`
 }
 
-func validTag(tag string) (bool, string) {
-	realTag, exists := validTags[strings.ToLower(tag)]
-	return exists, realTag.String()
+func validTag(tag string) (string, bool) {
+	realTag, ok := validTags[strings.ToLower(tag)]
+	return realTag.String(), ok
 }

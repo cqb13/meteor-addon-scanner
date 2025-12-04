@@ -215,4 +215,3 @@ func Locate(verifiedAddons []string) map[string]bool {
 
 	return repos
 }
-
