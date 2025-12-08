@@ -1,7 +1,6 @@
 package scanner
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
