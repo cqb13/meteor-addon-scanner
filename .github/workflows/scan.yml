@@ -37,7 +37,7 @@ jobs:
         run: rm -rf data && mkdir -p data
 
       - name: Run scanner and generate files
-        run: go run . config.json data/addons.json
+        run: go run ./cmd/main.go config.json data/addons.json
         env:
           KEY: ${{ secrets.KEY }}
 

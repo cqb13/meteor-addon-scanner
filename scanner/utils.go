@@ -52,58 +52,6 @@ func getRateLimitTracker(apiType string) *RateLimitTracker {
 
 const RetryAttempts int = 25
 
-type forkedRepository struct {
-	Parent struct {
-		PushedAt string `json:"pushed_at"`
-	} `json:"parent"`
-}
-
-type ForkValidationResult int
-
-const (
-	Valid ForkValidationResult = iota
-	InvalidChildTooOld
-	InvalidParentTooRecent
-)
-
-func ValidateForkedVerifiedAddons(addon Addon) (ForkValidationResult, error) {
-	currentTime := time.Now()
-
-	childUpdateTime, err := time.Parse(time.RFC3339, addon.Repo.LastUpdate)
-	if err != nil {
-		return 0, err
-	}
-
-	// Reject if the child hasn't been updated in 6 months
-	if childUpdateTime.AddDate(0, 6, 0).Before(currentTime) {
-		return InvalidChildTooOld, nil
-	}
-
-	url := fmt.Sprintf("https://api.github.com/repos/%s", addon.Repo.Id)
-	bytes, err := MakeGetRequest(url)
-	if err != nil {
-		return 0, err
-	}
-
-	var repo forkedRepository
-	err = json.Unmarshal(bytes, &repo)
-	if err != nil {
-		return 0, err
-	}
-
-	parentUpdateTime, err := time.Parse(time.RFC3339, repo.Parent.PushedAt)
-	if err != nil {
-		return 0, err
-	}
-
-	// Reject if the parent has been updated within 6 months of now
-	if parentUpdateTime.AddDate(0, 6, 0).After(currentTime) {
-		return InvalidParentTooRecent, nil
-	}
-
-	return Valid, nil
-}
-
 func MakeHeadRequest(url string) (int, error) {
 	resp, err := http.Head(url)
 	if err != nil {
