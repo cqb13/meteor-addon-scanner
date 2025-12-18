@@ -5,6 +5,22 @@ import (
 	"strings"
 )
 
+type Config struct {
+	BlacklistedRepos        []string `json:"repo-blacklist"`
+	BlacklistedDevs         []string `json:"developer-blacklist"`
+	Verified                []string `json:"verified"`
+	MinimumMinecraftVersion *string  `json:"minimum_minecraft_version"`
+	RequireMinecraftVersion bool     `json:"require_minecraft_version"`
+	IgnoreArchived          bool     `json:"ignore_archived"`
+	IgnoreForks             bool     `json:"ignore_forks"`
+	SuspicionTriggers       struct {
+		NameLength        int `json:"name_len"`
+		DescriptionLength int `json:"description_len"`
+		FeatureCount      int `json:"feature_count"`
+		SupportedVersions int `json:"supported_versions"`
+	} `json:"suspicion_triggers"`
+}
+
 type Tag int
 
 const (

@@ -94,7 +94,7 @@ func checkParentAndChildUpdateDates(addon scanner.Addon) (ForkValidationResult, 
 	return valid, nil
 }
 
-func DetectSuspiciousAddons(addons []*scanner.Addon, config *Config) map[string][]string {
+func DetectSuspiciousAddons(addons []*scanner.Addon, config *scanner.Config) map[string][]string {
 	suspicious := make(map[string][]string)
 	for _, addon := range addons {
 		reasons := make([]string, 0)

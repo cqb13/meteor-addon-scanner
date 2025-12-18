@@ -156,7 +156,9 @@ func getMinecraftVersion(fullName, defaultBranch string) string {
 	if err == nil && string(bytes) != "404: Not Found" {
 		versions := parseGradleVersions(string(bytes), nil)
 		if mc, ok := versions["minecraft_version"]; ok {
-			return mc
+			if mcVersionRegex.MatchString(mc) {
+				return mc
+			}
 		}
 	}
 
@@ -166,7 +168,9 @@ func getMinecraftVersion(fullName, defaultBranch string) string {
 	if err == nil && string(bytes) != "404: Not Found" {
 		versions := parseGradleVersions(string(bytes), nil)
 		if mc, ok := versions["minecraft_version"]; ok {
-			return mc
+			if mcVersionRegex.MatchString(mc) {
+				return mc
+			}
 		}
 	}
 
@@ -178,7 +182,9 @@ func getMinecraftVersion(fullName, defaultBranch string) string {
 		versions := parseGradleVersions(string(bytes), nil)
 		maps.Copy(allVersions, versions)
 		if mc, ok := versions["minecraft_version"]; ok {
-			return mc
+			if mcVersionRegex.MatchString(mc) {
+				return mc
+			}
 		}
 	}
 
@@ -188,7 +194,9 @@ func getMinecraftVersion(fullName, defaultBranch string) string {
 	if err == nil && string(bytes) != "404: Not Found" {
 		versions := parseGradleVersions(string(bytes), allVersions)
 		if mc, ok := versions["minecraft_version"]; ok {
-			return mc
+			if mcVersionRegex.MatchString(mc) {
+				return mc
+			}
 		}
 	}
 
@@ -198,7 +206,9 @@ func getMinecraftVersion(fullName, defaultBranch string) string {
 	if err == nil && string(bytes) != "404: Not Found" {
 		versions := parseGradleVersions(string(bytes), allVersions)
 		if mc, ok := versions["minecraft_version"]; ok {
-			return mc
+			if mcVersionRegex.MatchString(mc) {
+				return mc
+			}
 		}
 	}
 

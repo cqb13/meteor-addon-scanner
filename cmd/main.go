@@ -67,7 +67,7 @@ func main() {
 	fmt.Printf("Removed %d repositories from blacklisted developers\n", removed)
 
 	fmt.Println("Parsing Repositories")
-	addons := scanner.ParseRepos(repos, config.Verified)
+	addons := scanner.ParseRepos(repos, config)
 	fmt.Printf("Found %d/%d valid addons\n", len(addons), len(repos))
 
 	fmt.Println("Validating forked verified addons")

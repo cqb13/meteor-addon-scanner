@@ -17,6 +17,7 @@ Check out the [Meteor Addon List](https://www.meteoraddons.com)
   "developer-blacklist": [],
   "verified": [],
   "minimum_minecraft_version": null,
+  "require_minecraft_version": false,
   "ignore_archived": false,
   "ignore_forks": false,
   "suspicion_triggers": {

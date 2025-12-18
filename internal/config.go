@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"dev/cqb13/meteor-addon-scanner/scanner"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -8,29 +9,14 @@ import (
 	"strings"
 )
 
-type Config struct {
-	BlacklistedRepos        []string `json:"repo-blacklist"`
-	BlacklistedDevs         []string `json:"developer-blacklist"`
-	Verified                []string `json:"verified"`
-	MinimumMinecraftVersion *string  `json:"minimum_minecraft_version"`
-	IgnoreArchived          bool     `json:"ignore_archived"`
-	IgnoreForks             bool     `json:"ignore_forks"`
-	SuspicionTriggers       struct {
-		NameLength        int `json:"name_len"`
-		DescriptionLength int `json:"description_len"`
-		FeatureCount      int `json:"feature_count"`
-		SupportedVersions int `json:"supported_versions"`
-	} `json:"suspicion_triggers"`
-}
-
-func LoadConfig(path string) (*Config, error) {
+func LoadConfig(path string) (*scanner.Config, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to open config file: %v", err)
 	}
 	defer file.Close()
 
-	var config Config
+	var config scanner.Config
 	decoder := json.NewDecoder(file)
 	if err := decoder.Decode(&config); err != nil {
 		return nil, fmt.Errorf("Failed to parse config file: %v", err)

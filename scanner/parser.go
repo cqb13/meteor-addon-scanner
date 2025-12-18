@@ -50,7 +50,7 @@ func findVersion(fullName string, defaultBranch string) (string, error) {
 	return minecraftVersion, nil
 }
 
-func ParseRepo(fullName string) (*Addon, error) {
+func ParseRepo(fullName string, config *Config) (*Addon, error) {
 	repo, repoStr, err := getRepo(fullName)
 	if err != nil {
 		return nil, err
@@ -102,10 +102,7 @@ func ParseRepo(fullName string) (*Addon, error) {
 		return nil, nil
 	}
 
-	version, err := findVersion(fullName, repo.DefaultBranch)
-	if err != nil {
-		return nil, err
-	}
+	version := getMinecraftVersion(fullName, repo.DefaultBranch)
 
 	site := repo.Homepage
 
@@ -117,6 +114,10 @@ func ParseRepo(fullName string) (*Addon, error) {
 	customProperties, err := getCustomProperties(fullName, repo.DefaultBranch)
 	if err != nil {
 		return nil, err
+	}
+
+	if version == "" && len(customProperties.SupportedVersions) == 0 && config.RequireMinecraftVersion {
+		return nil, fmt.Errorf("Could not find Minecraft version")
 	}
 
 	addon := Addon{
@@ -151,9 +152,9 @@ func ParseRepo(fullName string) (*Addon, error) {
 	return &addon, nil
 }
 
-func ParseRepos(repos map[string]bool, verifiedRepos []string) []*Addon {
+func ParseRepos(repos map[string]bool, config *Config) []*Addon {
 	verifiedSet := make(map[string]bool)
-	for _, repo := range verifiedRepos {
+	for _, repo := range config.Verified {
 		verifiedSet[strings.ToLower(repo)] = true
 	}
 
@@ -172,7 +173,7 @@ func ParseRepos(repos map[string]bool, verifiedRepos []string) []*Addon {
 			semaphore <- struct{}{}
 			defer func() { <-semaphore }()
 
-			addon, err := ParseRepo(repoName)
+			addon, err := ParseRepo(repoName, config)
 			if err != nil {
 				fmt.Printf("\tFailed to parse %s: %v\n", repoName, err)
 				return
