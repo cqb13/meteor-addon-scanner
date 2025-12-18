@@ -78,7 +78,7 @@ func resolveVariable(versionStr string, currentVersions, allVersions map[string]
 	return resolved
 }
 
-// extracts Minecraft and Meteor versions from Gradle content
+// extracts Minecraft versions from Gradle content
 func parseGradleVersions(content string, existingVersions map[string]string) map[string]string {
 	versions := make(map[string]string)
 	maps.Copy(versions, existingVersions)
