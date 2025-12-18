@@ -43,7 +43,7 @@
     "MCDxAI/meteor-mcp-addon"
   ],
   "minimum_minecraft_version": null,
-  "require_minecraft_version": false,
+  "require_minecraft_version": true,
   "ignore_archived": false,
   "ignore_forks": false,
   "suspicion_triggers": {
