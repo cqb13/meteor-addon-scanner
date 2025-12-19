@@ -41,7 +41,8 @@
     "JuusK/MeteorExtras",
     "Julflips/nerv-printer-addon",
     "MCDxAI/meteor-mcp-addon",
-    "MCDxAI/meteor-client-webgui"
+    "MCDxAI/meteor-client-webgui",
+    "MCDxAI/meteor-addons-addon"
   ],
   "minimum_minecraft_version": null,
   "require_minecraft_version": true,
