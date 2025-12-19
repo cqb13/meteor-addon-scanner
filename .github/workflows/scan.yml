@@ -7,7 +7,7 @@ concurrency:
 on:
   push:
     paths:
-      - "verified.txt"
+      - "config.json"
       - ".github/workflows/scan.yml"
       - "**/*.go"
   schedule:
