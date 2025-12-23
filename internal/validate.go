@@ -4,6 +4,7 @@ import (
 	"dev/cqb13/meteor-addon-scanner/scanner"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -18,6 +19,7 @@ const (
 type forkedRepository struct {
 	Parent struct {
 		PushedAt string `json:"pushed_at"`
+		ID       string `json:"full_name"`
 	} `json:"parent"`
 }
 
@@ -29,7 +31,28 @@ func ValidateForkedVerifiedAddons(addons []*scanner.Addon) map[string]string {
 			continue
 		}
 
-		result, err := checkParentAndChildUpdateDates(*addon)
+		// fetch parent repo
+		url := fmt.Sprintf("https://api.github.com/repos/%s", addon.Repo.Id)
+		bytes, err := scanner.MakeGetRequest(url)
+		if err != nil {
+			log[addon.Repo.Id] = fmt.Sprintf("Failed to check, %s", err)
+			continue
+		}
+
+		var forkedRepo forkedRepository
+		err = json.Unmarshal(bytes, &forkedRepo)
+		if err != nil {
+			log[addon.Repo.Id] = fmt.Sprintf("Failed to check, %s", err)
+			continue
+		}
+
+		// forks of meteor addon template are valid
+		if strings.ToLower(forkedRepo.Parent.ID) == "meteordevelopment/meteor-addon-template" {
+			log[addon.Repo.Id] = "Parent repo is meteor-addon-template -> Valid"
+			continue
+		}
+
+		result, err := checkParentAndChildUpdateDates(*addon, &forkedRepo)
 		if err != nil {
 			log[addon.Repo.Id] = fmt.Sprintf("Failed to check, %s", err)
 			continue
@@ -53,7 +76,7 @@ func ValidateForkedVerifiedAddons(addons []*scanner.Addon) map[string]string {
 	return log
 }
 
-func checkParentAndChildUpdateDates(addon scanner.Addon) (ForkValidationResult, error) {
+func checkParentAndChildUpdateDates(addon scanner.Addon, forkedRepo *forkedRepository) (ForkValidationResult, error) {
 	if !addon.Repo.Fork {
 		return 0, fmt.Errorf("%s is not a fork", addon.Repo.Id)
 	}
@@ -69,19 +92,7 @@ func checkParentAndChildUpdateDates(addon scanner.Addon) (ForkValidationResult, 
 		return invalidChildTooOld, nil
 	}
 
-	url := fmt.Sprintf("https://api.github.com/repos/%s", addon.Repo.Id)
-	bytes, err := scanner.MakeGetRequest(url)
-	if err != nil {
-		return 0, err
-	}
-
-	var repo forkedRepository
-	err = json.Unmarshal(bytes, &repo)
-	if err != nil {
-		return 0, err
-	}
-
-	parentUpdateTime, err := time.Parse(time.RFC3339, repo.Parent.PushedAt)
+	parentUpdateTime, err := time.Parse(time.RFC3339, forkedRepo.Parent.PushedAt)
 	if err != nil {
 		return 0, err
 	}
