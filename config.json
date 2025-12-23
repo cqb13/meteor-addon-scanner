@@ -43,7 +43,8 @@
     "MCDxAI/meteor-mcp-addon",
     "MCDxAI/meteor-client-webgui",
     "MCDxAI/meteor-addons-addon",
-    "Nippaku-Zanmu/meteor-translation-addon"
+    "Nippaku-Zanmu/meteor-translation-addon",
+    "Powie69/PowHax"
   ],
   "minimum_minecraft_version": null,
   "require_minecraft_version": true,
