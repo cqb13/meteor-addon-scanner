@@ -1,7 +1,12 @@
 {
   "repo-blacklist": [
     "asteroide-development/Asteroide",
-    "creed27-tech/Saturn-Addon-1.21.4"
+    "creed27-tech/Saturn-Addon-1.21.4",
+    "leonidas-oliveira/blackout",
+    "nelsoft-client/blackout",
+    "srebrina/blackout",
+    "rohit1270/blackout",
+    "usama5860/blackout"
   ],
   "developer-blacklist": ["gottasweep"],
   "verified": [
