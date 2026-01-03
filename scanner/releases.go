@@ -41,40 +41,6 @@ func extractMCVersionFromFilename(filename string) string {
 	return ""
 }
 
-func compareMCVersions(v1, v2 string) bool {
-	if v1 == "" {
-		return false
-	}
-	if v2 == "" {
-		return true
-	}
-
-	parts1 := strings.Split(v1, ".")
-	parts2 := strings.Split(v2, ".")
-
-	maxLen := max(len(parts2), len(parts1))
-
-	for i := range maxLen {
-		var p1, p2 int
-
-		if i < len(parts1) {
-			fmt.Sscanf(parts1[i], "%d", &p1)
-		}
-		if i < len(parts2) {
-			fmt.Sscanf(parts2[i], "%d", &p2)
-		}
-
-		if p1 > p2 {
-			return true
-		}
-		if p1 < p2 {
-			return false
-		}
-	}
-
-	return false
-}
-
 func getReleaseDetails(fullName string) ([]string, string, int, error) {
 	url := fmt.Sprintf("https://api.github.com/repos/%v/releases?per_page=100&page=", fullName)
 
@@ -126,13 +92,15 @@ func getReleaseDetails(fullName string) ([]string, string, int, error) {
 
 					// Extract MC version from filename and track highest version
 					mcVersion := extractMCVersionFromFilename(asset.Name)
-					if compareMCVersions(mcVersion, latestVersion) {
+
+					if latestVersion == "" || CompareMinecraftVersions(mcVersion, latestVersion) > 0 {
 						latestVersion = mcVersion
 						latestDownload = asset.Url
 					} else if latestDownload == "" {
-						// if no version detected, use first JAR
+						// If no version detected yet, use the first JAR as a fallback
 						latestDownload = asset.Url
 					}
+
 				}
 				if len(stableDownloads) > 0 {
 					foundStable = true
@@ -149,7 +117,7 @@ func getReleaseDetails(fullName string) ([]string, string, int, error) {
 
 					// Extract MC version from filename and track highest version
 					mcVersion := extractMCVersionFromFilename(asset.Name)
-					if compareMCVersions(mcVersion, latestVersion) {
+					if latestVersion == "" || CompareMinecraftVersions(mcVersion, latestVersion) > 0 {
 						latestVersion = mcVersion
 						latestDownload = asset.Url
 					} else if latestDownload == "" {

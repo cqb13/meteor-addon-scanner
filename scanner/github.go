@@ -152,7 +152,7 @@ func getCustomProperties(fullName string, defaultBranch string) (*Custom, error)
 
 	// Sort versions from highest to lowest
 	sort.Slice(validVersions, func(i, j int) bool {
-		return compareMCVersions(validVersions[i], validVersions[j])
+		return CompareMinecraftVersions(validVersions[i], validVersions[j]) > 0
 	})
 
 	customData.SupportedVersions = validVersions

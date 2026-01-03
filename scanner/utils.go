@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -150,4 +151,40 @@ func BuildRequest(url string) (*http.Request, error) {
 	}
 
 	return req, nil
+}
+
+// CompareMinecraftVersions compares two Minecraft version strings numerically.
+//
+// Return values:
+//
+//	-1 if versionA < versionB
+//	 0 if versionA == versionB
+//	 1 if versionA > versionB
+func CompareMinecraftVersions(versionA, versionB string) int {
+	partsA := strings.Split(versionA, ".")
+	partsB := strings.Split(versionB, ".")
+
+	maxLength := max(len(partsB), len(partsA))
+
+	for index := range maxLength {
+		partA := 0
+		partB := 0
+
+		if index < len(partsA) {
+			partA, _ = strconv.Atoi(partsA[index])
+		}
+
+		if index < len(partsB) {
+			partB, _ = strconv.Atoi(partsB[index])
+		}
+
+		if partA < partB {
+			return -1
+		}
+		if partA > partB {
+			return 1
+		}
+	}
+
+	return 0
 }

@@ -6,13 +6,16 @@ import (
 )
 
 type Config struct {
-	BlacklistedRepos        []string `json:"repo-blacklist"`
-	BlacklistedDevs         []string `json:"developer-blacklist"`
-	Verified                []string `json:"verified"`
-	MinimumMinecraftVersion *string  `json:"minimum_minecraft_version"`
-	RequireMinecraftVersion bool     `json:"require_minecraft_version"`
-	IgnoreArchived          bool     `json:"ignore_archived"`
-	IgnoreForks             bool     `json:"ignore_forks"`
+	BlacklistedRepos []string `json:"repo-blacklist"`
+	BlacklistedDevs  []string `json:"developer-blacklist"`
+	VerifiedAddons   struct {
+		Verified            []string `json:"verified"`
+		MinMinecraftVersion string   `json:"minimum_mc_version"`
+		ValidateForks       bool     `json:"validate_forks"`
+	} `json:"verified_addons"`
+	RequireMinecraftVersion bool `json:"require_mc_version"`
+	IgnoreArchived          bool `json:"ignore_archived"`
+	IgnoreForks             bool `json:"ignore_forks"`
 	SuspicionTriggers       struct {
 		NameLength        int `json:"name_len"`
 		DescriptionLength int `json:"description_len"`

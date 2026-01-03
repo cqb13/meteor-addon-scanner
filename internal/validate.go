@@ -105,6 +105,28 @@ func checkParentAndChildUpdateDates(addon scanner.Addon, forkedRepo *forkedRepos
 	return valid, nil
 }
 
+func ValidateVerifiedAddonVersions(addons []*scanner.Addon, minVersion string) map[string]string {
+	unverifiedAddons := make(map[string]string)
+	for _, addon := range addons {
+		if !addon.Verified {
+			continue
+		}
+
+		version := addon.McVersion
+
+		if version == "" && len(addon.Custom.SupportedVersions) != 0 {
+			version = addon.Custom.SupportedVersions[0]
+		}
+
+		if scanner.CompareMinecraftVersions(version, minVersion) < 0 {
+			unverifiedAddons[addon.Repo.Id] = version
+			addon.Verified = false
+		}
+	}
+
+	return unverifiedAddons
+}
+
 func DetectSuspiciousAddons(addons []*scanner.Addon, config *scanner.Config) map[string][]string {
 	suspicious := make(map[string][]string)
 	for _, addon := range addons {

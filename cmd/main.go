@@ -57,7 +57,7 @@ func main() {
 	scanner.InitDefaultHeaders(key)
 
 	fmt.Println("Locating Repositories")
-	repos := scanner.Locate(config.Verified)
+	repos := scanner.Locate(config.VerifiedAddons.Verified)
 	fmt.Printf("Located %v repos\n", len(repos))
 
 	removed := internal.RemoveBlacklistedRepositories(config, repos)
@@ -70,10 +70,20 @@ func main() {
 	addons := scanner.ParseRepos(repos, config)
 	fmt.Printf("Found %d/%d valid addons\n", len(addons), len(repos))
 
-	fmt.Println("Validating forked verified addons")
-	log := internal.ValidateForkedVerifiedAddons(addons)
-	for addon, status := range log {
-		fmt.Printf("\t%s: %s\n", addon, status)
+	if config.VerifiedAddons.ValidateForks {
+		fmt.Println("Validating forked verified addons")
+		log := internal.ValidateForkedVerifiedAddons(addons)
+		for addon, status := range log {
+			fmt.Printf("\t%s: %s\n", addon, status)
+		}
+	}
+
+	if config.VerifiedAddons.MinMinecraftVersion != "" {
+		fmt.Println("Ensuring verified addons comply with minimum version")
+		unverifiedAddons := internal.ValidateVerifiedAddonVersions(addons, config.VerifiedAddons.MinMinecraftVersion)
+		for addon, version := range unverifiedAddons {
+			fmt.Printf("\t%s: Supports %s which is bellow the required %s version -> no longer verified\n", addon, version, config.VerifiedAddons.MinMinecraftVersion)
+		}
 	}
 
 	fmt.Println("Checking for suspicious addons")
