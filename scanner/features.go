@@ -30,6 +30,7 @@ func findFeatures(fullName string, defaultBranch string, entrypoint string) (Fea
 
 	source := string(bytes)
 
+	//TODO: fix detecting modules in comments (anything after //)
 	// Detect Module, HUD, System, Tab variable names
 	moduleVar := detectVariable(source, `(?m)\bModules\s+(\w+)\s*=\s*(Modules\.get\(\)|Systems\.get\(Modules\.class\));`)
 	hudVar := detectVariable(source, `(?m)\bHud\s+(\w+)\s*=\s*(Hud\.get\(\)|Systems\.get\(Hud\.class\));`)
