@@ -50,7 +50,8 @@
       "MCDxAI/meteor-client-webgui",
       "MCDxAI/meteor-addons-addon",
       "Nippaku-Zanmu/meteor-translation-addon",
-      "Powie69/PowHax"
+      "Powie69/PowHax",
+      "crazycat256/meteor-satellite-addon"
     ],
     "minimum_mc_version": "1.21",
     "validate_forks": true
