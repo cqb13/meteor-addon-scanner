@@ -56,6 +56,11 @@
     "minimum_mc_version": "1.21",
     "validate_forks": true
   },
+  "module_descriptions": {
+    "fetch": true,
+    "only_verified": true,
+    "minimum_star_count": 50
+  },
   "require_mc_version": true,
   "ignore_archived": false,
   "ignore_forks": false,

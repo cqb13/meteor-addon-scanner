@@ -13,6 +13,11 @@ type Config struct {
 		MinMinecraftVersion string   `json:"minimum_mc_version"`
 		ValidateForks       bool     `json:"validate_forks"`
 	} `json:"verified_addons"`
+	ModuleDescriptions struct {
+		Fetch        bool `json:"fetch"`
+		OnlyVerified bool `json:"only_verified"`
+		MinStarCount int  `json:"minimum_star_count"`
+	} `json:"module_descriptions"`
 	RequireMinecraftVersion bool `json:"require_mc_version"`
 	IgnoreArchived          bool `json:"ignore_archived"`
 	IgnoreForks             bool `json:"ignore_forks"`
