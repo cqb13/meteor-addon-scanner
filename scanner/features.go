@@ -73,7 +73,8 @@ func findFeatures(fullName string, defaultBranch string, entrypoint string) (Fea
 	varRegisterRegex := regexp.MustCompile(varRegisterPattern)
 	tabRegex := regexp.MustCompile(tabPattern)
 
-	var modules, hudElements, commands, customScreens []string
+	var modules, hudElements, commands []Feature
+	var customScreens []string
 	moduleSet := make(map[string]bool)
 	commandSet := make(map[string]bool)
 	hudSet := make(map[string]bool)
@@ -84,7 +85,10 @@ func findFeatures(fullName string, defaultBranch string, entrypoint string) (Fea
 		if len(match) >= 3 {
 			name := splitCamelCase(match[2])
 			if !moduleSet[name] {
-				modules = append(modules, name)
+				modules = append(modules, Feature{
+					name,
+					"",
+				})
 				moduleSet[name] = true
 			}
 		}
@@ -109,12 +113,18 @@ func findFeatures(fullName string, defaultBranch string, entrypoint string) (Fea
 			// Determine which category based on the add call
 			if strings.Contains(registerType, "Module") || strings.Contains(registerType, "System") {
 				if !moduleSet[name] {
-					modules = append(modules, name)
+					modules = append(modules, Feature{
+						name,
+						"",
+					})
 					moduleSet[name] = true
 				}
 			} else if strings.Contains(registerType, "Command") {
 				if !commandSet[name] {
-					commands = append(commands, name)
+					commands = append(commands, Feature{
+						name,
+						"",
+					})
 					commandSet[name] = true
 				}
 			}
@@ -126,7 +136,10 @@ func findFeatures(fullName string, defaultBranch string, entrypoint string) (Fea
 		if len(match) >= 3 {
 			name := splitCamelCase(match[2])
 			if !hudSet[name] {
-				hudElements = append(hudElements, name)
+				hudElements = append(hudElements, Feature{
+					name,
+					"",
+				})
 				hudSet[name] = true
 			}
 		}
@@ -137,7 +150,10 @@ func findFeatures(fullName string, defaultBranch string, entrypoint string) (Fea
 		if len(match) >= 2 {
 			name := splitCamelCase(match[1])
 			if !commandSet[name] {
-				commands = append(commands, name)
+				commands = append(commands, Feature{
+					name,
+					"",
+				})
 				commandSet[name] = true
 			}
 		}

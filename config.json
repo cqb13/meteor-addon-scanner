@@ -59,7 +59,7 @@
   "module_descriptions": {
     "fetch": true,
     "only_verified": true,
-    "minimum_star_count": 50
+    "minimum_star_count": 0
   },
   "require_mc_version": true,
   "ignore_archived": false,

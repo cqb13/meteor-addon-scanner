@@ -99,38 +99,50 @@ type Addon struct {
 	Authors     []string `json:"authors"`
 	Features    Features `json:"features"`
 	Verified    bool     `json:"verified"`
-	Repo        Repo     `json:"repo"`
-	Links       Links    `json:"links"`
-	Custom      Custom   `json:"custom"`
+	entrypoint  string
+	Repo        Repo   `json:"repo"`
+	Links       Links  `json:"links"`
+	Custom      Custom `json:"custom"`
 }
 
 type Custom struct {
-	Description       string   `json:"description"`
-	Tags              []string `json:"tags"`
-	SupportedVersions []string `json:"supported_versions"`
-	Icon              string   `json:"icon"`
-	Discord           string   `json:"discord"`
-	Homepage          string   `json:"homepage"`
+	Description        string   `json:"description"`
+	Tags               []string `json:"tags"`
+	SupportedVersions  []string `json:"supported_versions"`
+	Icon               string   `json:"icon"`
+	Discord            string   `json:"discord"`
+	Homepage           string   `json:"homepage"`
+	FeatureDirectories struct {
+		Modules     []string `json:"modules"`
+		Commands    []string `json:"commands"`
+		HudElements []string `json:"hud_elements"`
+	} `json:"feature_directories"`
 }
 
 type Features struct {
-	Modules       []string `json:"modules"`
-	Commands      []string `json:"commands"`
-	HudElements   []string `json:"hud_elements"`
-	CustomScreens []string `json:"custom_screens"`
-	FeatureCount  int      `json:"feature_count"`
+	Modules       []Feature `json:"modules"`
+	Commands      []Feature `json:"commands"`
+	HudElements   []Feature `json:"hud_elements"`
+	CustomScreens []string  `json:"custom_screens"`
+	FeatureCount  int       `json:"feature_count"`
+}
+
+type Feature struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
 }
 
 type Repo struct {
-	Id           string `json:"id"`
-	Owner        string `json:"owner"`
-	Name         string `json:"name"`
-	Archived     bool   `json:"archived"`
-	Fork         bool   `json:"fork"`
-	Stars        int    `json:"stars"`
-	Downloads    int    `json:"downloads"`
-	LastUpdate   string `json:"last_update"`
-	CreationDate string `json:"creation_date"`
+	Id            string `json:"id"`
+	defaultBranch string
+	Owner         string `json:"owner"`
+	Name          string `json:"name"`
+	Archived      bool   `json:"archived"`
+	Fork          bool   `json:"fork"`
+	Stars         int    `json:"stars"`
+	Downloads     int    `json:"downloads"`
+	LastUpdate    string `json:"last_update"`
+	CreationDate  string `json:"creation_date"`
 }
 
 type Links struct {

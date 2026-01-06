@@ -14,19 +14,19 @@ func isActualTemplate(features Features) bool {
 	}
 
 	for _, module := range features.Modules {
-		if !strings.Contains(strings.ToLower(module), "example") {
+		if !strings.Contains(strings.ToLower(module.Name), "example") {
 			return false
 		}
 	}
 
 	for _, cmd := range features.Commands {
-		if !strings.Contains(strings.ToLower(cmd), "example") {
+		if !strings.Contains(strings.ToLower(cmd.Name), "example") {
 			return false
 		}
 	}
 
 	for _, hud := range features.HudElements {
-		if !strings.Contains(strings.ToLower(hud), "example") {
+		if !strings.Contains(strings.ToLower(hud.Name), "example") {
 			return false
 		}
 	}
@@ -63,7 +63,7 @@ func ParseRepo(fullName string, config *Config) (*Addon, error) {
 
 	meteorEntries := normalizeMeteorEntrypoints(fabricModJson.Entrypoints.Meteor)
 	if len(meteorEntries) == 0 {
-		return nil, fmt.Errorf("Missing meteor entrypoint")
+		return nil, fmt.Errorf("No meteor entrypoint found in fabric.mod.json")
 	}
 
 	description := repo.Description
@@ -127,16 +127,18 @@ func ParseRepo(fullName string, config *Config) (*Addon, error) {
 		Authors:     authors,
 		Features:    features,
 		Verified:    false,
+		entrypoint:  strings.ReplaceAll(meteorEntries[0], ".", "/"),
 		Repo: Repo{
-			Id:           fullName,
-			Owner:        repo.Owner.Login,
-			Name:         repo.Name,
-			Archived:     repo.Archived,
-			Fork:         repo.Fork,
-			Stars:        repo.Stars,
-			Downloads:    downloadCount,
-			LastUpdate:   repo.PushedAt,
-			CreationDate: repo.CreatedAt,
+			Id:            fullName,
+			defaultBranch: repo.DefaultBranch,
+			Owner:         repo.Owner.Login,
+			Name:          repo.Name,
+			Archived:      repo.Archived,
+			Fork:          repo.Fork,
+			Stars:         repo.Stars,
+			Downloads:     downloadCount,
+			LastUpdate:    repo.PushedAt,
+			CreationDate:  repo.CreatedAt,
 		},
 		Links: Links{
 			Github:        repo.HtmlUrl,
@@ -185,6 +187,10 @@ func ParseRepos(repos map[string]bool, config *Config) []*Addon {
 			}
 
 			addon.Verified = verifiedSet[strings.ToLower(repoName)]
+
+			if config.ModuleDescriptions.Fetch && (config.ModuleDescriptions.OnlyVerified && addon.Verified || !config.ModuleDescriptions.OnlyVerified) && addon.Repo.Stars >= config.ModuleDescriptions.MinStarCount {
+				fetchDescriptions(addon)
+			}
 
 			addonsMutex.Lock()
 			addons = append(addons, addon)

@@ -114,11 +114,6 @@ func getFabricModJson(fullName string, defaultBranch string) (*fabric, string, e
 		return nil, "", fmt.Errorf("Invalid fabric.mod.json structure: %w", err)
 	}
 
-	meteorEntries := normalizeMeteorEntrypoints(fabricModJson.Entrypoints.Meteor)
-	if len(meteorEntries) == 0 {
-		return nil, "", fmt.Errorf("No meteor entrypoint found in fabric.mod.json")
-	}
-
 	return &fabricModJson, string(bytes), nil
 }
 
