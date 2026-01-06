@@ -20,6 +20,19 @@ func detectVariable(source string, pattern string) string {
 	return ""
 }
 
+// removeComments strips // line comments and /* block comments */
+func removeComments(source string) string {
+	// remove block comments first
+	blockComment := regexp.MustCompile(`(?s)/\*.*?\*/`)
+	source = blockComment.ReplaceAllString(source, "")
+
+	// remove line comments
+	lineComment := regexp.MustCompile(`//.*`)
+	source = lineComment.ReplaceAllString(source, "")
+
+	return source
+}
+
 func findFeatures(fullName string, defaultBranch string, entrypoint string) (Features, error) {
 	url := fmt.Sprintf("https://raw.githubusercontent.com/%v/%v/src/main/java/%v.java",
 		fullName, defaultBranch, strings.ReplaceAll(entrypoint, ".", "/"))
@@ -29,8 +42,9 @@ func findFeatures(fullName string, defaultBranch string, entrypoint string) (Fea
 	}
 
 	source := string(bytes)
+	// prevents commented out modules from being detected
+	source = removeComments(source)
 
-	//TODO: fix detecting modules in comments (anything after //)
 	// Detect Module, HUD, System, Tab variable names
 	moduleVar := detectVariable(source, `(?m)\bModules\s+(\w+)\s*=\s*(Modules\.get\(\)|Systems\.get\(Modules\.class\));`)
 	hudVar := detectVariable(source, `(?m)\bHud\s+(\w+)\s*=\s*(Hud\.get\(\)|Systems\.get\(Hud\.class\));`)
