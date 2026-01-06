@@ -141,17 +141,6 @@ To do that, create the file `meteor-addon-list.json` in the root directory of yo
 
 - Start from the entrypoint package, remove the class name -> base path (`cqb13/NumbyHack`).
 - List directories **relative to the base path**:
-
-Ex:
-
-```json
-"feature_directories": {
-  "modules": ["modules/general"],
-  "commands": ["modules/commands"],
-  "hud_elements": ["modules/hud"]
-}
-```
-
 - Only list directories, not files. Use forward slashes `/` and no leading or ending slash.
 
 _This tool is based on [AntiCope](https://github.com/AntiCope/anticope.ml)_
