@@ -120,11 +120,11 @@ type Custom struct {
 }
 
 type Features struct {
-	Modules       []Feature `json:"modules"`
-	Commands      []Feature `json:"commands"`
-	HudElements   []Feature `json:"hud_elements"`
-	CustomScreens []string  `json:"custom_screens"`
-	FeatureCount  int       `json:"feature_count"`
+	Modules      []Feature `json:"modules"`
+	Commands     []Feature `json:"commands"`
+	HudElements  []Feature `json:"hud_elements"`
+	Tabs         []string  `json:"tabs"`
+	FeatureCount int       `json:"feature_count"`
 }
 
 type Feature struct {

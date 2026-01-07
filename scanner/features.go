@@ -88,11 +88,11 @@ func findFeatures(fullName string, defaultBranch string, entrypoint string) (Fea
 	tabRegex := regexp.MustCompile(tabPattern)
 
 	var modules, hudElements, commands []Feature
-	var customScreens []string
+	var tabs []string
 	moduleSet := make(map[string]bool)
 	commandSet := make(map[string]bool)
 	hudSet := make(map[string]bool)
-	customScreenSet := make(map[string]bool)
+	tabSet := make(map[string]bool)
 
 	// Extract inline new registrations for modules
 	for _, match := range moduleRegex.FindAllStringSubmatch(source, -1) {
@@ -177,9 +177,9 @@ func findFeatures(fullName string, defaultBranch string, entrypoint string) (Fea
 	for _, match := range tabRegex.FindAllStringSubmatch(source, -1) {
 		if len(match) >= 3 {
 			name := splitCamelCase(match[2])
-			if !customScreenSet[name] {
-				customScreens = append(customScreens, name)
-				customScreenSet[name] = true
+			if !tabSet[name] {
+				tabs = append(tabs, name)
+				tabSet[name] = true
 			}
 		}
 	}
@@ -188,7 +188,7 @@ func findFeatures(fullName string, defaultBranch string, entrypoint string) (Fea
 		Modules:       modules,
 		Commands:      commands,
 		HudElements:   hudElements,
-		CustomScreens: customScreens,
-		FeatureCount:  len(modules) + len(hudElements) + len(commands) + len(customScreens),
+		CustomScreens: tabs,
+		FeatureCount:  len(modules) + len(hudElements) + len(commands) + len(tabs),
 	}, nil
 }
