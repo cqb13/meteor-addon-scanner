@@ -20,6 +20,11 @@ Check out the [Meteor Addon List](https://meteoraddons.com)
     "minimum_mc_version": "1.20",
     "validate_forks": true
   },
+  "module_descriptions": {
+    "fetch": true,
+    "only_verified": true,
+    "minimum_star_count": 0
+  },
   "require_mc_version": false,
   "ignore_archived": false,
   "ignore_forks": false,
