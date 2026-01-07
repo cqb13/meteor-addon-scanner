@@ -71,7 +71,8 @@ scanner config.json addons.json
           "description": "description here"
         }
       ],
-      "custom_screens": ["string"],
+      "tabs": ["string"],
+      "themes": ["string"],
       "feature_count": 0
     },
     "verified": false,
