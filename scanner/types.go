@@ -124,6 +124,7 @@ type Features struct {
 	Commands     []Feature `json:"commands"`
 	HudElements  []Feature `json:"hud_elements"`
 	Tabs         []string  `json:"tabs"`
+	Themes       []string  `json:"themes"`
 	FeatureCount int       `json:"feature_count"`
 }
 

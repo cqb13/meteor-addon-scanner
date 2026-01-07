@@ -81,18 +81,23 @@ func findFeatures(fullName string, defaultBranch string, entrypoint string) (Fea
 	}
 	tabPattern += `)\(\s*new\s+([A-Z][A-Za-z0-9_]+)\s*\(.*?\)\s*\);?`
 
+	// recognize added themes
+	themePattern := `(?m)(GuiThemes\.add)\(\s*new\s+([A-Z][A-Za-z0-9_]+)\s*\(.*?\)\s*\);?`
+
 	moduleRegex := regexp.MustCompile(modulePattern)
 	hudRegex := regexp.MustCompile(hudPattern)
 	commandRegex := regexp.MustCompile(commandPattern)
 	varRegisterRegex := regexp.MustCompile(varRegisterPattern)
 	tabRegex := regexp.MustCompile(tabPattern)
+	themeRegex := regexp.MustCompile(themePattern)
 
 	var modules, hudElements, commands []Feature
-	var tabs []string
+	var tabs, themes []string
 	moduleSet := make(map[string]bool)
 	commandSet := make(map[string]bool)
 	hudSet := make(map[string]bool)
 	tabSet := make(map[string]bool)
+	themeSet := make(map[string]bool)
 
 	// Extract inline new registrations for modules
 	for _, match := range moduleRegex.FindAllStringSubmatch(source, -1) {
@@ -184,11 +189,23 @@ func findFeatures(fullName string, defaultBranch string, entrypoint string) (Fea
 		}
 	}
 
+	// Extract themes
+	for _, match := range themeRegex.FindAllStringSubmatch(source, -1) {
+		if len(match) >= 3 {
+			name := splitCamelCase(match[2])
+			if !themeSet[name] {
+				themes = append(themes, name)
+				themeSet[name] = true
+			}
+		}
+	}
+
 	return Features{
-		Modules:       modules,
-		Commands:      commands,
-		HudElements:   hudElements,
-		CustomScreens: tabs,
-		FeatureCount:  len(modules) + len(hudElements) + len(commands) + len(tabs),
+		Modules:      modules,
+		Commands:     commands,
+		HudElements:  hudElements,
+		Tabs:         tabs,
+		Themes:       themes,
+		FeatureCount: len(modules) + len(hudElements) + len(commands) + len(tabs),
 	}, nil
 }

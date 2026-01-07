@@ -31,12 +31,6 @@ func isActualTemplate(features Features) bool {
 		}
 	}
 
-	for _, screen := range features.CustomScreens {
-		if !strings.Contains(strings.ToLower(screen), "example") {
-			return false
-		}
-	}
-
 	return true
 }
 
