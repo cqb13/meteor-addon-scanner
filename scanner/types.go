@@ -140,6 +140,7 @@ type Repo struct {
 	Name          string `json:"name"`
 	Archived      bool   `json:"archived"`
 	Fork          bool   `json:"fork"`
+	Forks         int    `json:"forks"`
 	Stars         int    `json:"stars"`
 	Downloads     int    `json:"downloads"`
 	LastUpdate    string `json:"last_update"`
@@ -171,6 +172,7 @@ type repository struct {
 	PushedAt      string `json:"pushed_at"`
 	CreatedAt     string `json:"created_at"`
 	Fork          bool   `json:"fork"`
+	Forks         int    `json:"forks_count"`
 	Archived      bool   `json:"archived"`
 	Homepage      string `json:"homepage"`
 	Owner         struct {

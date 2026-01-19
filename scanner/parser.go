@@ -129,6 +129,7 @@ func ParseRepo(fullName string, config *Config) (*Addon, error) {
 			Name:          repo.Name,
 			Archived:      repo.Archived,
 			Fork:          repo.Fork,
+			Forks:         repo.Forks,
 			Stars:         repo.Stars,
 			Downloads:     downloadCount,
 			LastUpdate:    repo.PushedAt,
