@@ -2,26 +2,73 @@ package scanner
 
 import (
 	"fmt"
-	"maps"
 	"regexp"
 	"strings"
 )
 
 var identifierRe = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
 
+// fetches and parses gradle files to extract minecraft version
+func getMinecraftVersion(fullName string, defaultBranch string) string {
+	// Priority order: gradle/libs.versions.toml → libs.versions.toml → gradle.properties → build.gradle → build.gradle.kts
+
+	// Try gradle/libs.versions.toml first
+	url := fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/gradle/libs.versions.toml", fullName, defaultBranch)
+	if mc, ok := fetchAndParseGradleFile(url); ok {
+		return mc
+	}
+
+	// Try libs.versions.toml in root (some addons put it there)
+	url = fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/libs.versions.toml", fullName, defaultBranch)
+	if mc, ok := fetchAndParseGradleFile(url); ok {
+		return mc
+	}
+
+	// Try gradle.properties
+	url = fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/gradle.properties", fullName, defaultBranch)
+	if mc, ok := fetchAndParseGradleFile(url); ok {
+		return mc
+	}
+
+	// Try build.gradle
+	url = fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/build.gradle", fullName, defaultBranch)
+	if mc, ok := fetchAndParseGradleFile(url); ok {
+		return mc
+	}
+
+	// Try build.gradle.kts
+	url = fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/build.gradle.kts", fullName, defaultBranch)
+	if mc, ok := fetchAndParseGradleFile(url); ok {
+		return mc
+	}
+
+	return ""
+}
+
+func fetchAndParseGradleFile(url string) (string, bool) {
+	bytes, err := MakeGetRequest(url)
+	if err == nil && string(bytes) != "404: Not Found" {
+		versions := parseGradleVersions(string(bytes))
+		if mc, ok := versions["minecraft_version"]; ok {
+			if mcVersionRegex.MatchString(mc) {
+				return mc, true
+			}
+		}
+	}
+
+	return "", false
+}
+
 // resolves a variable reference like ${var} or properties["var"]
-func resolveVariable(versionStr string, currentVersions, allVersions map[string]string) string {
+func resolveVariable(versionStr string, versions map[string]string) string {
 	if versionStr == "" {
 		return ""
 	}
 
 	resolved := versionStr
-	lookupSources := make(map[string]string)
-	maps.Copy(lookupSources, currentVersions)
-	maps.Copy(lookupSources, allVersions)
 
 	replaceVar := func(matchStr, varName string) {
-		if val, ok := lookupSources[varName]; ok {
+		if val, ok := versions[varName]; ok {
 			resolved = strings.Replace(resolved, matchStr, val, 1)
 		}
 	}
@@ -79,9 +126,8 @@ func resolveVariable(versionStr string, currentVersions, allVersions map[string]
 }
 
 // extracts Minecraft versions from Gradle content
-func parseGradleVersions(content string, existingVersions map[string]string) map[string]string {
+func parseGradleVersions(content string) map[string]string {
 	versions := make(map[string]string)
-	maps.Copy(versions, existingVersions)
 
 	// TOML Check
 	if strings.Contains(content, "[versions]") {
@@ -123,7 +169,7 @@ func parseGradleVersions(content string, existingVersions map[string]string) map
 		} else {
 			val = mcMatch[3]
 		}
-		versions["minecraft_version"] = resolveVariable(strings.TrimSpace(val), versions, existingVersions)
+		versions["minecraft_version"] = resolveVariable(strings.TrimSpace(val), versions)
 	} else {
 		mcDepRe := regexp.MustCompile(`(?i)minecraft\s*\(?\s*['"]com\.mojang:minecraft:(.*)`)
 		mcDepMatch := mcDepRe.FindStringSubmatch(content)
@@ -138,79 +184,10 @@ func parseGradleVersions(content string, existingVersions map[string]string) map
 
 			if lastQuoteIdx != -1 {
 				rawVersion := rawLine[:lastQuoteIdx]
-				versions["minecraft_version"] = resolveVariable(rawVersion, versions, existingVersions)
+				versions["minecraft_version"] = resolveVariable(rawVersion, versions)
 			}
 		}
 	}
 
 	return versions
-}
-
-// fetches and parses gradle files to extract minecraft version
-func getMinecraftVersion(fullName, defaultBranch string) string {
-	// Priority order: gradle/libs.versions.toml → libs.versions.toml → gradle.properties → build.gradle → build.gradle.kts
-
-	// Try gradle/libs.versions.toml first
-	url := fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/gradle/libs.versions.toml", fullName, defaultBranch)
-	bytes, err := MakeGetRequest(url)
-	if err == nil && string(bytes) != "404: Not Found" {
-		versions := parseGradleVersions(string(bytes), nil)
-		if mc, ok := versions["minecraft_version"]; ok {
-			if mcVersionRegex.MatchString(mc) {
-				return mc
-			}
-		}
-	}
-
-	// Try libs.versions.toml in root (some addons put it there)
-	url = fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/libs.versions.toml", fullName, defaultBranch)
-	bytes, err = MakeGetRequest(url)
-	if err == nil && string(bytes) != "404: Not Found" {
-		versions := parseGradleVersions(string(bytes), nil)
-		if mc, ok := versions["minecraft_version"]; ok {
-			if mcVersionRegex.MatchString(mc) {
-				return mc
-			}
-		}
-	}
-
-	// Try gradle.properties
-	url = fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/gradle.properties", fullName, defaultBranch)
-	bytes, err = MakeGetRequest(url)
-	allVersions := make(map[string]string)
-	if err == nil && string(bytes) != "404: Not Found" {
-		versions := parseGradleVersions(string(bytes), nil)
-		maps.Copy(allVersions, versions)
-		if mc, ok := versions["minecraft_version"]; ok {
-			if mcVersionRegex.MatchString(mc) {
-				return mc
-			}
-		}
-	}
-
-	// Try build.gradle
-	url = fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/build.gradle", fullName, defaultBranch)
-	bytes, err = MakeGetRequest(url)
-	if err == nil && string(bytes) != "404: Not Found" {
-		versions := parseGradleVersions(string(bytes), allVersions)
-		if mc, ok := versions["minecraft_version"]; ok {
-			if mcVersionRegex.MatchString(mc) {
-				return mc
-			}
-		}
-	}
-
-	// Try build.gradle.kts
-	url = fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/build.gradle.kts", fullName, defaultBranch)
-	bytes, err = MakeGetRequest(url)
-	if err == nil && string(bytes) != "404: Not Found" {
-		versions := parseGradleVersions(string(bytes), allVersions)
-		if mc, ok := versions["minecraft_version"]; ok {
-			if mcVersionRegex.MatchString(mc) {
-				return mc
-			}
-		}
-	}
-
-	return ""
 }
