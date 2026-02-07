@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: write # Required to push to branches
+      contents: write
 
     steps:
       - name: Checkout Repository
@@ -38,8 +38,20 @@ jobs:
       - name: Remove old output files
         run: rm -rf data && mkdir -p data
 
+      - name: Fetch invalid-repo-log.txt from addons branch
+        run: |
+          set -euo pipefail
+          git fetch origin addons || true
+
+          if git show origin/addons:invalid-repo-log.txt > data/invalid-repo-log.txt 2>/dev/null; then
+            echo "Loaded invalid-repo-log.txt from addons branch"
+          else
+            echo "No invalid-repo-log.txt found on addons branch; creating empty file"
+            : > invalid-repo-log.txt
+          fi
+
       - name: Run scanner and generate files
-        run: go run ./cmd/main.go config.json data/addons.json invalid-repo-log.txt
+        run: go run ./cmd/main.go config.json data/addons.json data/invalid-repo-log.txt
         env:
           KEY: ${{ secrets.KEY }}
 
@@ -57,9 +69,11 @@ jobs:
 
           # Copy the generated files
           cp data/addons.json addons.json
+          cp data/invalid-repo-log.txt invalid-repo-log.txt
 
           # Add and commit
           git add addons.json
+          git add invalid-repo-log.txt
           git commit -m "updated addons" || echo "No changes to commit"
 
           # Push to addons branch
