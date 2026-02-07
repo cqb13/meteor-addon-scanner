@@ -4,6 +4,7 @@ import (
 	"dev/cqb13/meteor-addon-scanner/scanner"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -39,4 +40,23 @@ func ValidateConfigPath(path string) error {
 	}
 
 	return nil
+}
+
+func LoadInvalidRepoLog(path string, invalidRepoLog map[string]any) bool {
+	file, err := os.Open(path)
+	if err != nil {
+		return false
+	}
+	defer file.Close()
+
+	bytes, err := io.ReadAll(file)
+	if err != nil {
+		return false
+	}
+
+	for line := range strings.SplitSeq(string(bytes), "\n") {
+		invalidRepoLog[line] = nil
+	}
+
+	return true
 }

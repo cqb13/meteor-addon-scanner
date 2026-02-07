@@ -149,7 +149,7 @@ func ParseRepo(fullName string, config *Config) (*Addon, error) {
 	return &addon, nil
 }
 
-func ParseRepos(repos map[string]bool, config *Config) []*Addon {
+func ParseRepos(repos map[string]bool, config *Config, invalidAddonsLog map[string]any) []*Addon {
 	verifiedSet := make(map[string]bool)
 	for _, repo := range config.VerifiedAddons.Verified {
 		verifiedSet[strings.ToLower(repo)] = true
@@ -157,6 +157,8 @@ func ParseRepos(repos map[string]bool, config *Config) []*Addon {
 
 	var addons []*Addon
 	var addonsMutex sync.Mutex
+
+	var invalidAddonsLogMutex sync.Mutex
 	var wg sync.WaitGroup
 
 	semaphore := make(chan struct{}, 10)
@@ -170,8 +172,18 @@ func ParseRepos(repos map[string]bool, config *Config) []*Addon {
 			semaphore <- struct{}{}
 			defer func() { <-semaphore }()
 
+			_, ok := invalidAddonsLog[repoName]
+			if ok {
+				fmt.Printf("\tSkipping %s: Marked as invalid\n", repoName)
+				return
+			}
+
 			addon, err := ParseRepo(repoName, config)
 			if err != nil {
+				invalidAddonsLogMutex.Lock()
+				invalidAddonsLog[repoName] = nil
+				invalidAddonsLogMutex.Unlock()
+
 				fmt.Printf("\tFailed to parse %s: %v\n", repoName, err)
 				return
 			}

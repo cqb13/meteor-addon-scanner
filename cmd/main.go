@@ -17,7 +17,7 @@ func main() {
 	args := os.Args
 
 	if len(args) < 3 {
-		fmt.Println("Not enough argument provided: config.json output.json")
+		fmt.Println("Not enough argument provided: config.json output.json [invalid.txt]")
 		return
 	}
 
@@ -28,6 +28,19 @@ func main() {
 	if err != nil {
 		fmt.Println(err)
 		return
+	}
+
+	invalidRepoLogPath := ""
+	invalidRepoLog := make(map[string]any)
+	if len(args) >= 4 {
+		invalidRepoLogPath = args[3]
+
+		ok := internal.LoadInvalidRepoLog(invalidRepoLogPath, invalidRepoLog)
+		if !ok {
+			fmt.Println("Failed to load invalid repo log")
+		} else {
+			fmt.Println("Loaded invalid repo log")
+		}
 	}
 
 	err = internal.ValidateConfigPath(configPath)
@@ -67,7 +80,7 @@ func main() {
 	fmt.Printf("Removed %d repositories from blacklisted developers\n", removed)
 
 	fmt.Println("Parsing Repositories")
-	addons := scanner.ParseRepos(repos, config)
+	addons := scanner.ParseRepos(repos, config, invalidRepoLog)
 	fmt.Printf("Found %d/%d valid addons\n", len(addons), len(repos))
 
 	if config.VerifiedAddons.ValidateForks {
@@ -94,6 +107,21 @@ func main() {
 
 	for repo, reasons := range suspicious {
 		fmt.Printf("\t%s: %s\n", repo, strings.Join(reasons, ", "))
+	}
+
+	// update invalid repo log, if used
+	if invalidRepoLogPath != "" {
+		file, err := os.Create(invalidRepoLogPath)
+		if err != nil {
+			fmt.Printf("Failed to create invalid repo log: %s\n", err)
+		} else {
+			for repo := range invalidRepoLog {
+				fmt.Fprintf(file, "%s\n", repo)
+			}
+
+			fmt.Printf("Updated invalid repo log\n")
+
+		}
 	}
 
 	// save addons

@@ -39,7 +39,7 @@ jobs:
         run: rm -rf data && mkdir -p data
 
       - name: Run scanner and generate files
-        run: go run ./cmd/main.go config.json data/addons.json
+        run: go run ./cmd/main.go config.json data/addons.json invalid-repo-log.txt
         env:
           KEY: ${{ secrets.KEY }}
 
