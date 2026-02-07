@@ -43,6 +43,14 @@ Check out the [Meteor Addon List](https://meteoraddons.com)
 scanner config.json addons.json
 ```
 
+To stop the scanner from re-scanning invalid addon repositories run the following command
+
+```bash
+scanner config.json addons.json invalid-repo-log.txt
+```
+
+On the first scan invalid repositories will be saved to the file and on subsequent scans they will be skipped
+
 ## Output
 
 ```json
