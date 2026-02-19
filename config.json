@@ -54,7 +54,8 @@
       "crazycat256/meteor-satellite-addon",
       "turtlegamerw/kawaii-addon-_V2-real",
       "cqb13/Baritone-Controller",
-      "Nippaku-Zanmu/Seija-Printer"
+      "Nippaku-Zanmu/Seija-Printer",
+      "nyphrux/meteor-amethyst-addon"
     ],
     "minimum_mc_version": "1.21",
     "validate_forks": true
