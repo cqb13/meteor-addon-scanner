@@ -134,7 +134,8 @@ func MakeGetRequest(url string) ([]byte, error) {
 func InitDefaultHeaders(token string) {
 	defaultHeaders = http.Header{}
 	defaultHeaders.Add("Authorization", "token "+token)
-	defaultHeaders.Add("Accept", "application/vnd.github.v3+json")
+	defaultHeaders.Add("Accept", "application/vnd.github+json")
+	defaultHeaders.Add("X-GitHub-Api-Version", "2026-03-10")
 	defaultHeaders.Add("User-Agent", "cqb13/meteor-addon-scanner")
 }
 
