@@ -160,7 +160,7 @@ type Links struct {
 // and formats (e.g., "https://discord.gg/abc123", "discord.com/invite/abc")
 var inviteRegex = regexp.MustCompile(`((?:https?:\/\/)?(?:www\.)?(?:discord\.(?:gg|io|me|li|com)|discordapp\.com/invite|dsc\.gg)/[a-zA-Z0-9\-\/]+)`)
 
-var mcVersionRegex = regexp.MustCompile(`^1\.\d+(\.\d+)?$`)
+var mcVersionRegex = regexp.MustCompile(`^(?:1\.\d+(?:\.\d+)?|\d{2}\.\d+(?:\.\d+)?)$`)
 
 type repository struct {
 	FullName      string `json:"full_name"`

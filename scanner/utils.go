@@ -162,6 +162,16 @@ func BuildRequest(url string) (*http.Request, error) {
 //	 0 if versionA == versionB
 //	 1 if versionA > versionB
 func CompareMinecraftVersions(versionA, versionB string) int {
+	isLegacyA := strings.HasPrefix(versionA, "1.")
+	isLegacyB := strings.HasPrefix(versionB, "1.")
+
+	if isLegacyA != isLegacyB {
+		if isLegacyA {
+			return -1
+		}
+		return 1
+	}
+
 	partsA := strings.Split(versionA, ".")
 	partsB := strings.Split(versionB, ".")
 

@@ -32,8 +32,8 @@ func isValidJarAsset(assetName string) bool {
 }
 
 func extractMCVersionFromFilename(filename string) string {
-	// Match patterns like: 1.21, 1.21.1, 1.21.10, etc.
-	re := regexp.MustCompile(`(?i)(?:^|[_\-\.])(?:mc)?[_\-\.]?(1\.\d+(?:\.\d+)?)(?:[_\-\.]|\.jar$)`)
+	// Match patterns like: 1.21, 1.21.1, 1.21.10, 26.1, 26.1.0, etc.
+	re := regexp.MustCompile(`(?i)(?:^|[_\-\.])(?:mc)?[_\-\.]?((?:1\.\d+|\d{2}\.\d+)(?:\.\d+)?)(?:[_\-\.]|\.jar$)`)
 	matches := re.FindStringSubmatch(filename)
 	if len(matches) >= 2 {
 		return matches[1]
