@@ -55,7 +55,8 @@
       "turtlegamerw/kawaii-addon-_V2-real",
       "cqb13/Baritone-Controller",
       "Nippaku-Zanmu/Seija-Printer",
-      "nyphrux/meteor-amethyst-addon"
+      "nyphrux/meteor-amethyst-addon",
+      "ShaunaAyala/Exodar-Addon"
     ],
     "minimum_mc_version": "1.21",
     "validate_forks": true
