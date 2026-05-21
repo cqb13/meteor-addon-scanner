@@ -27,6 +27,7 @@ type Config struct {
 		FeatureCount      int `json:"feature_count"`
 		SupportedVersions int `json:"supported_versions"`
 	} `json:"suspicion_triggers"`
+	AllowedImageHosts []string `json:"allowed_image_hosts"`
 }
 
 type Tag int

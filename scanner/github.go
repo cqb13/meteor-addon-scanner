@@ -3,6 +3,8 @@ package scanner
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
+	"slices"
 	"sort"
 	"strings"
 )
@@ -80,8 +82,8 @@ func normalizeMeteorEntrypoints(meteor any) []string {
 }
 
 func getRepo(fullName string) (*repository, string, error) {
-	url := fmt.Sprintf("https://api.github.com/repos/%v", fullName)
-	bytes, err := MakeGetRequest(url)
+	apiURL := fmt.Sprintf("https://api.github.com/repos/%v", fullName)
+	bytes, err := MakeGetRequest(apiURL)
 	if err != nil {
 		return nil, "", err
 	}
@@ -97,8 +99,8 @@ func getRepo(fullName string) (*repository, string, error) {
 }
 
 func getFabricModJson(fullName string, defaultBranch string) (*fabric, string, error) {
-	url := fmt.Sprintf("https://raw.githubusercontent.com/%v/%v/src/main/resources/fabric.mod.json", fullName, defaultBranch)
-	bytes, err := MakeGetRequest(url)
+	rawURL := fmt.Sprintf("https://raw.githubusercontent.com/%v/%v/src/main/resources/fabric.mod.json", fullName, defaultBranch)
+	bytes, err := MakeGetRequest(rawURL)
 	if err != nil {
 		return nil, "", err
 	}
@@ -117,10 +119,10 @@ func getFabricModJson(fullName string, defaultBranch string) (*fabric, string, e
 	return &fabricModJson, string(bytes), nil
 }
 
-func getCustomProperties(fullName string, defaultBranch string) (*Custom, error) {
-	url := fmt.Sprintf("https://raw.githubusercontent.com/%v/%v/meteor-addon-list.json", fullName, defaultBranch)
+func getCustomProperties(fullName string, defaultBranch string, allowedImageHosts []string) (*Custom, error) {
+	rawURL := fmt.Sprintf("https://raw.githubusercontent.com/%v/%v/meteor-addon-list.json", fullName, defaultBranch)
 
-	bytes, err := MakeGetRequest(url)
+	bytes, err := MakeGetRequest(rawURL)
 	if err != nil {
 		return nil, err
 	}
@@ -164,12 +166,19 @@ func getCustomProperties(fullName string, defaultBranch string) (*Custom, error)
 
 	customData.Tags = validTags
 
+	if customData.Icon != "" {
+		parsed, err := url.Parse(customData.Icon)
+		if err != nil || !slices.Contains(allowedImageHosts, parsed.Host) {
+			customData.Icon = ""
+		}
+	}
+
 	return &customData, nil
 }
 
 func getIcon(fullName string, defaultBranch string, icon string) (string, error) {
-	url := fmt.Sprintf("https://raw.githubusercontent.com/%v/%v/src/main/resources/%v", fullName, defaultBranch, icon)
-	bytes, err := MakeGetRequest(url)
+	u := fmt.Sprintf("https://raw.githubusercontent.com/%v/%v/src/main/resources/%v", fullName, defaultBranch, icon)
+	bytes, err := MakeGetRequest(u)
 	if err != nil {
 		return "", err
 	}
@@ -178,5 +187,5 @@ func getIcon(fullName string, defaultBranch string, icon string) (string, error)
 		return "", nil
 	}
 
-	return url, nil
+	return u, nil
 }

@@ -33,7 +33,8 @@ Check out the [Meteor Addon List](https://meteoraddons.com)
     "description_len": 333,
     "feature_count": 1000,
     "supported_versions": 15
-  }
+  },
+  "allowed_image_hosts": ["raw.githubusercontent.com"]
 }
 ```
 

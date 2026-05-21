@@ -105,7 +105,7 @@ func ParseRepo(fullName string, config *Config) (*Addon, error) {
 		site = ""
 	}
 
-	customProperties, err := getCustomProperties(fullName, repo.DefaultBranch)
+	customProperties, err := getCustomProperties(fullName, repo.DefaultBranch, config.AllowedImageHosts)
 	if err != nil {
 		return nil, err
 	}
