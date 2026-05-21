@@ -56,7 +56,8 @@
       "cqb13/Baritone-Controller",
       "Nippaku-Zanmu/Seija-Printer",
       "nyphrux/meteor-amethyst-addon",
-      "ShaunaAyala/Exodar-Addon"
+      "ShaunaAyala/Exodar-Addon",
+      "numericly/meteor-super-printer"
     ],
     "minimum_mc_version": "1.21",
     "validate_forks": true
