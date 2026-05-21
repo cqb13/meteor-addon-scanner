@@ -136,12 +136,12 @@ func ParseRepo(fullName string, config *Config) (*Addon, error) {
 			CreationDate:  repo.CreatedAt,
 		},
 		Links: Links{
-			Github:        repo.HtmlUrl,
+			Github:        sanitizeURL(repo.HtmlUrl),
 			Downloads:     downloads,
-			LatestRelease: latestRelease,
-			Discord:       invite,
+			LatestRelease: sanitizeURL(latestRelease),
+			Discord:       sanitizeURL(invite),
 			Icon:          icon,
-			Homepage:      site,
+			Homepage:      sanitizeURL(site),
 		},
 		Custom: *customProperties,
 	}

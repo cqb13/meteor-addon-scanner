@@ -154,6 +154,14 @@ func BuildRequest(url string) (*http.Request, error) {
 	return req, nil
 }
 
+func sanitizeURL(u string) string {
+	if strings.HasPrefix(u, "https://") {
+		return u
+	}
+
+	return ""
+}
+
 // CompareMinecraftVersions compares two Minecraft version strings numerically.
 //
 // Return values:

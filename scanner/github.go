@@ -166,9 +166,12 @@ func getCustomProperties(fullName string, defaultBranch string, allowedImageHost
 
 	customData.Tags = validTags
 
+	customData.Discord = sanitizeURL(customData.Discord)
+	customData.Homepage = sanitizeURL(customData.Homepage)
+
 	if customData.Icon != "" {
 		parsed, err := url.Parse(customData.Icon)
-		if err != nil || !slices.Contains(allowedImageHosts, parsed.Host) {
+		if err != nil || parsed.Scheme != "https" || !slices.Contains(allowedImageHosts, parsed.Host) {
 			customData.Icon = ""
 		}
 	}
