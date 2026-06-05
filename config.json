@@ -57,7 +57,8 @@
       "Nippaku-Zanmu/Seija-Printer",
       "nyphrux/meteor-amethyst-addon",
       "ShaunaAyala/Exodar-Addon",
-      "numericly/meteor-super-printer"
+      "numericly/meteor-super-printer",
+      "MrBZBZ/LeavesHack"
     ],
     "minimum_mc_version": "1.21",
     "validate_forks": true
