@@ -54,6 +54,7 @@ jobs:
         run: go run ./cmd/main.go config.json data/addons.json data/invalid-repo-log.txt
         env:
           KEY: ${{ secrets.KEY }}
+          WEBHOOK: ${{ secrets.WEBHOOK }}
 
       - name: Deploy to addons branch
         run: |
