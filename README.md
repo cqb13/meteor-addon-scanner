@@ -10,6 +10,7 @@ Check out the [Meteor Addon List](https://meteoraddons.com)
 
 1. Create a **.env** file with a value **KEY** with a github API key with read access to public repositories
 2. create a config.json file
+3. Optionally add a **WEBHOOK** to the .env file to send information about scans to discord
 
 ```json
 {
@@ -34,7 +35,8 @@ Check out the [Meteor Addon List](https://meteoraddons.com)
     "feature_count": 1000,
     "supported_versions": 15
   },
-  "allowed_image_hosts": ["raw.githubusercontent.com"]
+  "allowed_image_hosts": ["raw.githubusercontent.com"],
+  "discord_webhook": false
 }
 ```
 

@@ -28,6 +28,7 @@ type Config struct {
 		SupportedVersions int `json:"supported_versions"`
 	} `json:"suspicion_triggers"`
 	AllowedImageHosts []string `json:"allowed_image_hosts"`
+	DiscordWebhook    bool     `json:"discord_webhook"`
 }
 
 type Tag int

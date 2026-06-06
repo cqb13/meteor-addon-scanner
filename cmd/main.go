@@ -1,11 +1,13 @@
 package main
 
 import (
+	"dev/cqb13/meteor-addon-scanner/discord"
 	"dev/cqb13/meteor-addon-scanner/internal"
 	"dev/cqb13/meteor-addon-scanner/scanner"
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -66,8 +68,10 @@ func main() {
 		fmt.Println(".env file not found, assuming environment variable is set externally")
 	}
 
-	var key string = os.Getenv("KEY")
+	key := os.Getenv("KEY")
 	scanner.InitDefaultHeaders(key)
+
+	webhookUrl := os.Getenv("WEBHOOK")
 
 	fmt.Println("Locating Repositories")
 	repos := scanner.Locate(config.VerifiedAddons.Verified)
@@ -160,6 +164,28 @@ func main() {
 	minutes := int(executionTime) / 60
 	seconds := int(executionTime) % 60
 	fmt.Printf("  Execution Time: %d.%02d\n", minutes, seconds)
+
+	if config.DiscordWebhook {
+		payload := discord.NewWebhookPayload().WithUsername("Meteor Addon Scanner").WithAvatarURl("https://meteoraddons.com/favicon-96x96.png")
+
+		now := time.Now().Format("01/02/2006")
+
+		embed := discord.NewEmbed().
+			WithTitle(fmt.Sprintf("Scan results from %s", now)).
+			WithField("Repos Scanned", strconv.Itoa(len(repos)), false).
+			WithField("Valid Addons", strconv.Itoa(len(addons)), false).
+			WithField("Archived Addons", strconv.Itoa(archivedCount), false).
+			WithField("Invalid Addons", strconv.Itoa(len(repos)-len(addons)), false).
+			WithField("Execution Time", fmt.Sprintf("%dm %ds", minutes, seconds), false).
+			WithColor(0xdab2ff)
+
+		payload.AddEmbed(embed)
+
+		_, err := discord.SendWebhookPayload(payload, webhookUrl)
+		if err != nil {
+			fmt.Println("Failed to send webhook payload: ", err)
+		}
+	}
 
 	fmt.Println("Done!")
 }
