@@ -110,7 +110,6 @@ dom2010minecraft-cell/wix-addons
 yourfinalmemory/kittyware
 ell1ott/meteor-client-smooth-rotation
 mrkeww/meteor-fatpack
-thianyong-hub/devils
 koooksiii/meteor-client
 carter031010/meteor-client
 remiliiajp/komeiji-client
