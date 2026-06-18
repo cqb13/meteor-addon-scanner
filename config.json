@@ -58,7 +58,8 @@
       "nyphrux/meteor-amethyst-addon",
       "ShaunaAyala/Exodar-Addon",
       "numericly/meteor-super-printer",
-      "MrBZBZ/LeavesHack"
+      "MrBZBZ/LeavesHack",
+      "Powie69/6bees"
     ],
     "minimum_mc_version": "1.21",
     "validate_forks": true
