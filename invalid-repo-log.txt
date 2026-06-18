@@ -237,7 +237,6 @@ yzksk/extrabotany
 luizgabriels5915/ghast
 evo11211/wobot
 notruri/meteor-client
-thianyong-hub/devils
 rhencloud/meteor-client-cn
 zsm0rgen/6b6taddon
 icenoteblock/legacy
