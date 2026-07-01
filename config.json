@@ -59,7 +59,8 @@
       "ShaunaAyala/Exodar-Addon",
       "numericly/meteor-super-printer",
       "MrBZBZ/LeavesHack",
-      "Powie69/6bees"
+      "Powie69/6bees",
+      "Gingerbeard5773/meteor-valley-builder"
     ],
     "minimum_mc_version": "1.21",
     "validate_forks": true
