@@ -61,7 +61,8 @@
       "MrBZBZ/LeavesHack",
       "Powie69/6bees",
       "Gingerbeard5773/meteor-valley-builder",
-      "cqb13/Mapart-Exporter-Addon"
+      "cqb13/Mapart-Exporter-Addon",
+      "flaryx32/MeteorServerSeeker"
     ],
     "minimum_mc_version": "1.21",
     "validate_forks": true
