@@ -1,7 +1,9 @@
 package scanner
 
 import (
+	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"regexp"
 	"strings"
 )
@@ -11,44 +13,79 @@ var commandDescriptionRegex = regexp.MustCompile(`super\s*\(\s*"[^"]*"\s*,\s*"([
 var hudElementDescriptionRegex = regexp.MustCompile(`new\s+HudElementInfo<[^>]*>\s*\([^,]+,\s*"[^"]*"\s*,\s*"([^"]*)"`)
 
 func fetchDescriptions(addon *Addon) {
-	baseUrl := fmt.Sprintf("https://raw.githubusercontent.com/%v/%v/src/main/java/%v", addon.Repo.Id, addon.Repo.defaultBranch, packageFromEntrypoint(addon.entrypoint))
-	if len(addon.Custom.FeatureDirectories.Modules) != 0 {
-		fetchModuleDescription(addon, baseUrl)
+	entryPoint := fmt.Sprintf(packageFromEntrypoint(addon.entrypoint))
+	baseUrl := fmt.Sprintf("https://raw.githubusercontent.com/%v/%v/src/main/java/%v", addon.Repo.Id, addon.Repo.defaultBranch, entryPoint)
+	searchUrl := fmt.Sprintf("https://api.github.com/repos/%v/git/trees/%v?recursive=1", addon.Repo.Id, addon.Repo.defaultBranch)
+
+	searchUrlBytes, err := MakeGetRequest(searchUrl)
+	if err != nil {
+		return
+	}
+
+	var response TreeResponse
+	if err := json.Unmarshal(searchUrlBytes, &response); err != nil {
+		fmt.Println("Failed to parse JSON:", err)
+		return
+	}
+
+	if response.Truncated {
+		fmt.Println("Warning: The repository tree was truncated by GitHub!")
+	}
+
+	PossibleFeaturesSet := make(map[string]string)
+	path := fmt.Sprintf("src/main/java/%v", entryPoint)
+
+	for _, item := range response.Tree {
+		if item.Type == "blob" && strings.HasPrefix(item.Path, path) && strings.HasSuffix(item.Path, ".java") {
+			filename := filepath.Base(item.Path)
+			className := strings.TrimSuffix(filename, ".java")
+			_, relativePath, _ := strings.Cut(item.Path, entryPoint)
+
+			PossibleFeaturesSet[className] = relativePath
+		}
+	}
+
+	if len(addon.Features.Modules) != 0 {
+		fetchModuleDescription(addon, baseUrl, PossibleFeaturesSet)
 	}
 
 	if len(addon.Custom.FeatureDirectories.Commands) != 0 {
-		fetchCommandDescription(addon, baseUrl)
+		//fetchCommandDescription(addon, baseUrl)
 	}
 
 	if len(addon.Custom.FeatureDirectories.HudElements) != 0 {
-		fetchHudDescription(addon, baseUrl)
+		//fetchHudDescription(addon, baseUrl)
 	}
 }
 
-func fetchModuleDescription(addon *Addon, baseUrl string) {
+func fetchModuleDescription(addon *Addon, baseUrl string, PossibleFeaturesSet map[string]string) {
+
 	for i := range addon.Features.Modules {
 		className := strings.ReplaceAll(addon.Features.Modules[i].Name, " ", "")
 
-		for _, directory := range addon.Custom.FeatureDirectories.Modules {
-			moduleUrl := fmt.Sprintf("%s/%s/%s.java", baseUrl, directory, className)
-
-			fileContent, err := fetchFile(moduleUrl)
-			if err != nil {
-				continue
-			}
-
-			if !strings.Contains(fileContent, "extends Module") || !strings.Contains(fileContent, fmt.Sprintf("public %s", className)) {
-				continue
-			}
-
-			matches := moduleDescriptionRegex.FindStringSubmatch(fileContent)
-			desc := ""
-			if len(matches) > 1 {
-				desc = matches[1]
-			}
-
-			addon.Features.Modules[i].Description = desc
+		if _, exists := PossibleFeaturesSet[className]; !exists {
+			continue
 		}
+
+		commandUrl := fmt.Sprintf("%s%s", baseUrl, PossibleFeaturesSet[className])
+		//
+		fileContent, err := fetchFile(commandUrl)
+		if err != nil {
+			continue
+		}
+
+		if !strings.Contains(fileContent, "extends Module") || !strings.Contains(fileContent, fmt.Sprintf("public %s", className)) {
+			continue
+		}
+
+		matches := moduleDescriptionRegex.FindStringSubmatch(fileContent)
+		desc := ""
+		if len(matches) > 1 {
+			desc = matches[1]
+		}
+
+		addon.Features.Modules[i].Description = desc
+		delete(PossibleFeaturesSet, className) // <-- does this even matter? or is it just unnecessary overhead
 	}
 }
 

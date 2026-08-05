@@ -195,9 +195,9 @@ func ParseRepos(repos map[string]bool, config *Config, invalidAddonsLog map[stri
 
 			addon.Verified = verifiedSet[strings.ToLower(repoName)]
 
-			if config.ModuleDescriptions.Fetch && (config.ModuleDescriptions.OnlyVerified && addon.Verified || !config.ModuleDescriptions.OnlyVerified) && addon.Repo.Stars >= config.ModuleDescriptions.MinStarCount {
-				fetchDescriptions(addon)
-			}
+			fetchDescriptions(addon)
+			//if config.ModuleDescriptions.Fetch && (config.ModuleDescriptions.OnlyVerified && addon.Verified || !config.ModuleDescriptions.OnlyVerified) && addon.Repo.Stars >= config.ModuleDescriptions.MinStarCount {
+			//}
 
 			addonsMutex.Lock()
 			addons = append(addons, addon)

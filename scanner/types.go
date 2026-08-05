@@ -203,6 +203,22 @@ type release struct {
 	} `json:"assets"`
 }
 
+type TreeResponse struct {
+	SHA       string     `json:"sha"`
+	URL       string     `json:"url"`
+	Tree      []TreeItem `json:"tree"`
+	Truncated bool       `json:"truncated"`
+}
+
+type TreeItem struct {
+	Path string `json:"path"`
+	Mode string `json:"mode"`
+	Type string `json:"type"`
+	SHA  string `json:"sha"`
+	Size int64  `json:"size,omitempty"`
+	URL  string `json:"url"` //
+}
+
 func validTag(tag string) (string, bool) {
 	realTag, ok := validTags[strings.ToLower(tag)]
 	return realTag.String(), ok
