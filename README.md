@@ -143,21 +143,8 @@ To do that, create the file `meteor-addon-list.json` in the root directory of yo
   "supported_versions": ["1.21.7", "1.21.8"],
   "icon": "https://example.com/icon.png",
   "discord": "https://discord.gg/yourserver",
-  "homepage": "https://example.com",
-  "feature_directories": {
-    "commands": ["modules/commands"],
-    "modules": ["modules/general"],
-    "hud_elements": ["modules/hud"]
-  }
+  "homepage": "https://example.com"
 }
 ```
-
-### Feature Directories
-
-`feature_directories` tells the scanner where to find your Java files for modules, commands, and HUD elements.
-
-- Start from the entrypoint package, remove the class name -> base path (`cqb13/NumbyHack`).
-- List directories **relative to the base path**:
-- Only list directories, not files. Use forward slashes `/` and no leading or ending slash.
 
 _This tool is based on [AntiCope](https://github.com/AntiCope/anticope.ml)_

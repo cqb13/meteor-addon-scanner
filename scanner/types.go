@@ -108,17 +108,12 @@ type Addon struct {
 }
 
 type Custom struct {
-	Description        string   `json:"description"`
-	Tags               []string `json:"tags"`
-	SupportedVersions  []string `json:"supported_versions"`
-	Icon               string   `json:"icon"`
-	Discord            string   `json:"discord"`
-	Homepage           string   `json:"homepage"`
-	FeatureDirectories struct {
-		Modules     []string `json:"modules"`
-		Commands    []string `json:"commands"`
-		HudElements []string `json:"hud_elements"`
-	} `json:"feature_directories"`
+	Description       string   `json:"description"`
+	Tags              []string `json:"tags"`
+	SupportedVersions []string `json:"supported_versions"`
+	Icon              string   `json:"icon"`
+	Discord           string   `json:"discord"`
+	Homepage          string   `json:"homepage"`
 }
 
 type Features struct {
