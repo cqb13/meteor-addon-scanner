@@ -204,19 +204,17 @@ type release struct {
 }
 
 type TreeResponse struct {
-	SHA       string     `json:"sha"`
-	URL       string     `json:"url"`
-	Tree      []TreeItem `json:"tree"`
-	Truncated bool       `json:"truncated"`
-}
-
-type TreeItem struct {
-	Path string `json:"path"`
-	Mode string `json:"mode"`
-	Type string `json:"type"`
 	SHA  string `json:"sha"`
-	Size int64  `json:"size,omitempty"`
-	URL  string `json:"url"` //
+	URL  string `json:"url"`
+	Tree []struct {
+		Path string `json:"path"`
+		Mode string `json:"mode"`
+		Type string `json:"type"`
+		SHA  string `json:"sha"`
+		Size int64  `json:"size,omitempty"`
+		URL  string `json:"url"`
+	} `json:"tree"`
+	Truncated bool `json:"truncated"`
 }
 
 func validTag(tag string) (string, bool) {

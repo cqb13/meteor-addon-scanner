@@ -15,51 +15,48 @@ var hudElementDescriptionRegex = regexp.MustCompile(`new\s+HudElementInfo<[^>]*>
 func fetchDescriptions(addon *Addon) {
 	entryPoint := fmt.Sprintf(packageFromEntrypoint(addon.entrypoint))
 	baseUrl := fmt.Sprintf("https://raw.githubusercontent.com/%v/%v/src/main/java/%v", addon.Repo.Id, addon.Repo.defaultBranch, entryPoint)
-	searchUrl := fmt.Sprintf("https://api.github.com/repos/%v/git/trees/%v?recursive=1", addon.Repo.Id, addon.Repo.defaultBranch)
 
-	searchUrlBytes, err := MakeGetRequest(searchUrl)
+	searchUrl, err := MakeGetRequest(fmt.Sprintf("https://api.github.com/repos/%v/git/trees/%v?recursive=1", addon.Repo.Id, addon.Repo.defaultBranch))
 	if err != nil {
 		return
 	}
 
 	var response TreeResponse
-	if err := json.Unmarshal(searchUrlBytes, &response); err != nil {
-		fmt.Println("Failed to parse JSON:", err)
+	if err := json.Unmarshal(searchUrl, &response); err != nil {
+		fmt.Printf("\tFailed to parse %s: %v\n", addon.Name, err)
 		return
 	}
 
 	if response.Truncated {
-		fmt.Println("Warning: The repository tree was truncated by GitHub!")
+		fmt.Printf("\tWarning: %v tree was truncated by github", addon.Repo.Id)
 	}
 
-	PossibleFeaturesSet := make(map[string]string)
+	PossibleFeatures := make(map[string]string)
 	path := fmt.Sprintf("src/main/java/%v", entryPoint)
 
 	for _, item := range response.Tree {
-		if item.Type == "blob" && strings.HasPrefix(item.Path, path) && strings.HasSuffix(item.Path, ".java") {
-			filename := filepath.Base(item.Path)
-			className := strings.TrimSuffix(filename, ".java")
+		if item.Type == "blob" && strings.HasPrefix(item.Path, path+"/") && strings.HasSuffix(item.Path, ".java") {
+			className := strings.TrimSuffix(filepath.Base(item.Path), ".java")
 			_, relativePath, _ := strings.Cut(item.Path, entryPoint)
 
-			PossibleFeaturesSet[className] = relativePath
+			PossibleFeatures[className] = relativePath
 		}
 	}
 
 	if len(addon.Features.Modules) != 0 {
-		fetchModuleDescription(addon, baseUrl, PossibleFeaturesSet)
+		fetchModuleDescription(addon, baseUrl, PossibleFeatures)
 	}
 
-	if len(addon.Custom.FeatureDirectories.Commands) != 0 {
-		//fetchCommandDescription(addon, baseUrl)
+	if len(addon.Features.Commands) != 0 {
+		fetchCommandDescription(addon, baseUrl, PossibleFeatures)
 	}
 
-	if len(addon.Custom.FeatureDirectories.HudElements) != 0 {
-		//fetchHudDescription(addon, baseUrl)
+	if len(addon.Features.HudElements) != 0 {
+		fetchHudDescription(addon, baseUrl, PossibleFeatures)
 	}
 }
 
 func fetchModuleDescription(addon *Addon, baseUrl string, PossibleFeaturesSet map[string]string) {
-
 	for i := range addon.Features.Modules {
 		className := strings.ReplaceAll(addon.Features.Modules[i].Name, " ", "")
 
@@ -68,7 +65,6 @@ func fetchModuleDescription(addon *Addon, baseUrl string, PossibleFeaturesSet ma
 		}
 
 		commandUrl := fmt.Sprintf("%s%s", baseUrl, PossibleFeaturesSet[className])
-		//
 		fileContent, err := fetchFile(commandUrl)
 		if err != nil {
 			continue
@@ -89,57 +85,60 @@ func fetchModuleDescription(addon *Addon, baseUrl string, PossibleFeaturesSet ma
 	}
 }
 
-func fetchCommandDescription(addon *Addon, baseUrl string) {
+func fetchCommandDescription(addon *Addon, baseUrl string, PossibleFeaturesSet map[string]string) {
 	for i := range addon.Features.Commands {
 		className := strings.ReplaceAll(addon.Features.Commands[i].Name, " ", "")
 
-		for _, directory := range addon.Custom.FeatureDirectories.Commands {
-			commandUrl := fmt.Sprintf("%s/%s/%s.java", baseUrl, directory, className)
-
-			fileContent, err := fetchFile(commandUrl)
-			if err != nil {
-				continue
-			}
-
-			if !strings.Contains(fileContent, "extends Command") || !strings.Contains(fileContent, fmt.Sprintf("public %s", className)) {
-				continue
-			}
-
-			matches := commandDescriptionRegex.FindStringSubmatch(fileContent)
-			desc := ""
-			if len(matches) > 1 {
-				desc = matches[1]
-			}
-
-			addon.Features.Commands[i].Description = desc
+		if _, exists := PossibleFeaturesSet[className]; !exists {
+			continue
 		}
+
+		commandUrl := fmt.Sprintf("%s%s", baseUrl, PossibleFeaturesSet[className])
+		fileContent, err := fetchFile(commandUrl)
+		if err != nil {
+			continue
+		}
+
+		if !strings.Contains(fileContent, "extends Command") || !strings.Contains(fileContent, fmt.Sprintf("public %s", className)) {
+			continue
+		}
+		matches := commandDescriptionRegex.FindStringSubmatch(fileContent)
+		desc := ""
+		if len(matches) > 1 {
+			desc = matches[1]
+		}
+
+		addon.Features.Commands[i].Description = desc
+		delete(PossibleFeaturesSet, className) // <-- does this even matter? or is it just unnecessary overhead
 	}
 }
 
-func fetchHudDescription(addon *Addon, baseUrl string) {
+func fetchHudDescription(addon *Addon, baseUrl string, PossibleFeaturesSet map[string]string) {
 	for i := range addon.Features.HudElements {
 		className := strings.ReplaceAll(addon.Features.HudElements[i].Name, " ", "")
 
-		for _, directory := range addon.Custom.FeatureDirectories.HudElements {
-			hudUrl := fmt.Sprintf("%s/%s/%s.java", baseUrl, directory, className)
-
-			fileContent, err := fetchFile(hudUrl)
-			if err != nil {
-				continue
-			}
-
-			if !strings.Contains(fileContent, "extends HudElement") || !strings.Contains(fileContent, fmt.Sprintf("public %s", className)) {
-				continue
-			}
-
-			matches := hudElementDescriptionRegex.FindStringSubmatch(fileContent)
-			desc := ""
-			if len(matches) > 1 {
-				desc = matches[1]
-			}
-
-			addon.Features.HudElements[i].Description = desc
+		if _, exists := PossibleFeaturesSet[className]; !exists {
+			continue
 		}
+
+		commandUrl := fmt.Sprintf("%s%s", baseUrl, PossibleFeaturesSet[className])
+		fileContent, err := fetchFile(commandUrl)
+		if err != nil {
+			continue
+		}
+
+		if !strings.Contains(fileContent, "extends HudElement") || !strings.Contains(fileContent, fmt.Sprintf("public %s", className)) {
+			continue
+		}
+
+		matches := hudElementDescriptionRegex.FindStringSubmatch(fileContent)
+		desc := ""
+		if len(matches) > 1 {
+			desc = matches[1]
+		}
+
+		addon.Features.HudElements[i].Description = desc
+		delete(PossibleFeaturesSet, className) // <-- does this even matter? or is it just unnecessary overhead
 	}
 }
 

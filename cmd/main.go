@@ -77,11 +77,11 @@ func main() {
 	repos := scanner.Locate(config.VerifiedAddons.Verified)
 	fmt.Printf("Located %v repos\n", len(repos))
 
-	//removed := internal.RemoveBlacklistedRepositories(config, repos)
-	//fmt.Printf("Removed %d/%d repo blacklisted repositories\n", removed, len(config.BlacklistedRepos))
-	//
-	//removed = internal.RemoveBlacklistedDevelopers(config, repos)
-	//fmt.Printf("Removed %d repositories from blacklisted developers\n", removed)
+	removed := internal.RemoveBlacklistedRepositories(config, repos)
+	fmt.Printf("Removed %d/%d repo blacklisted repositories\n", removed, len(config.BlacklistedRepos))
+
+	removed = internal.RemoveBlacklistedDevelopers(config, repos)
+	fmt.Printf("Removed %d repositories from blacklisted developers\n", removed)
 
 	fmt.Println("Parsing Repositories")
 	addons := scanner.ParseRepos(repos, config, invalidRepoLog)
@@ -134,22 +134,20 @@ func main() {
 		fmt.Printf("Failed to convert addons to JSON: %v\n", err)
 		return
 	}
-	
-	fmt.Printf(string(jsonData))
 
-	//file, err := os.Create(outputPath)
-	//if err != nil {
-	//	fmt.Printf("Failed to create output file: %v\n", err)
-	//	return
-	//}
-	//defer file.Close()
-	//
-	//_, err = file.Write(jsonData)
-	//if err != nil {
-	//	fmt.Println("Error writing to file:", err)
-	//	return
-	//}
-	//
+	file, err := os.Create(outputPath)
+	if err != nil {
+		fmt.Printf("Failed to create output file: %v\n", err)
+		return
+	}
+	defer file.Close()
+
+	_, err = file.Write(jsonData)
+	if err != nil {
+		fmt.Println("Error writing to file:", err)
+		return
+	}
+
 	// get stats
 	archivedCount := 0
 	for _, addon := range addons {
