@@ -56,15 +56,15 @@ func fetchDescriptions(addon *Addon) {
 	}
 }
 
-func fetchModuleDescription(addon *Addon, baseUrl string, PossibleFeaturesSet map[string]string) {
+func fetchModuleDescription(addon *Addon, baseUrl string, PossibleFeatures map[string]string) {
 	for i := range addon.Features.Modules {
 		className := strings.ReplaceAll(addon.Features.Modules[i].Name, " ", "")
 
-		if _, exists := PossibleFeaturesSet[className]; !exists {
+		if _, exists := PossibleFeatures[className]; !exists {
 			continue
 		}
 
-		commandUrl := fmt.Sprintf("%s%s", baseUrl, PossibleFeaturesSet[className])
+		commandUrl := fmt.Sprintf("%s%s", baseUrl, PossibleFeatures[className])
 		fileContent, err := fetchFile(commandUrl)
 		if err != nil {
 			continue
@@ -81,19 +81,19 @@ func fetchModuleDescription(addon *Addon, baseUrl string, PossibleFeaturesSet ma
 		}
 
 		addon.Features.Modules[i].Description = desc
-		delete(PossibleFeaturesSet, className)
+		delete(PossibleFeatures, className)
 	}
 }
 
-func fetchCommandDescription(addon *Addon, baseUrl string, PossibleFeaturesSet map[string]string) {
+func fetchCommandDescription(addon *Addon, baseUrl string, PossibleFeatures map[string]string) {
 	for i := range addon.Features.Commands {
 		className := strings.ReplaceAll(addon.Features.Commands[i].Name, " ", "")
 
-		if _, exists := PossibleFeaturesSet[className]; !exists {
+		if _, exists := PossibleFeatures[className]; !exists {
 			continue
 		}
 
-		commandUrl := fmt.Sprintf("%s%s", baseUrl, PossibleFeaturesSet[className])
+		commandUrl := fmt.Sprintf("%s%s", baseUrl, PossibleFeatures[className])
 		fileContent, err := fetchFile(commandUrl)
 		if err != nil {
 			continue
@@ -109,19 +109,19 @@ func fetchCommandDescription(addon *Addon, baseUrl string, PossibleFeaturesSet m
 		}
 
 		addon.Features.Commands[i].Description = desc
-		delete(PossibleFeaturesSet, className)
+		delete(PossibleFeatures, className)
 	}
 }
 
-func fetchHudDescription(addon *Addon, baseUrl string, PossibleFeaturesSet map[string]string) {
+func fetchHudDescription(addon *Addon, baseUrl string, PossibleFeatures map[string]string) {
 	for i := range addon.Features.HudElements {
 		className := strings.ReplaceAll(addon.Features.HudElements[i].Name, " ", "")
 
-		if _, exists := PossibleFeaturesSet[className]; !exists {
+		if _, exists := PossibleFeatures[className]; !exists {
 			continue
 		}
 
-		commandUrl := fmt.Sprintf("%s%s", baseUrl, PossibleFeaturesSet[className])
+		commandUrl := fmt.Sprintf("%s%s", baseUrl, PossibleFeatures[className])
 		fileContent, err := fetchFile(commandUrl)
 		if err != nil {
 			continue
@@ -138,7 +138,7 @@ func fetchHudDescription(addon *Addon, baseUrl string, PossibleFeaturesSet map[s
 		}
 
 		addon.Features.HudElements[i].Description = desc
-		delete(PossibleFeaturesSet, className)
+		delete(PossibleFeatures, className)
 	}
 }
 
