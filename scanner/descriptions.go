@@ -13,7 +13,7 @@ var commandDescriptionRegex = regexp.MustCompile(`super\s*\(\s*"[^"]*"\s*,\s*"([
 var hudElementDescriptionRegex = regexp.MustCompile(`new\s+HudElementInfo<[^>]*>\s*\([^,]+,\s*"[^"]*"\s*,\s*"([^"]*)"`)
 
 func fetchDescriptions(addon *Addon) {
-	entryPoint := fmt.Sprintf(packageFromEntrypoint(addon.entrypoint))
+	entryPoint := packageFromEntrypoint(addon.entrypoint)
 	baseUrl := fmt.Sprintf("https://raw.githubusercontent.com/%v/%v/src/main/java/%v", addon.Repo.Id, addon.Repo.defaultBranch, entryPoint)
 
 	searchUrl, err := MakeGetRequest(fmt.Sprintf("https://api.github.com/repos/%v/git/trees/%v?recursive=1", addon.Repo.Id, addon.Repo.defaultBranch))
@@ -32,13 +32,12 @@ func fetchDescriptions(addon *Addon) {
 	}
 
 	PossibleFeatures := make(map[string]string)
-	path := fmt.Sprintf("src/main/java/%v", entryPoint)
+	path := fmt.Sprintf("src/main/java/%v/", entryPoint)
 
 	for _, item := range response.Tree {
-		if item.Type == "blob" && strings.HasPrefix(item.Path, path+"/") && strings.HasSuffix(item.Path, ".java") {
+		if item.Type == "blob" && strings.HasPrefix(item.Path, path) && strings.HasSuffix(item.Path, ".java") {
 			className := strings.TrimSuffix(filepath.Base(item.Path), ".java")
-			_, relativePath, _ := strings.Cut(item.Path, entryPoint)
-
+			_, relativePath, _ := strings.Cut(item.Path, path)
 			PossibleFeatures[className] = relativePath
 		}
 	}
@@ -64,8 +63,7 @@ func fetchModuleDescription(addon *Addon, baseUrl string, PossibleFeatures map[s
 			continue
 		}
 
-		commandUrl := fmt.Sprintf("%s%s", baseUrl, PossibleFeatures[className])
-		fileContent, err := fetchFile(commandUrl)
+		fileContent, err := fetchFile(fmt.Sprintf("%s/%s", baseUrl, PossibleFeatures[className]))
 		if err != nil {
 			continue
 		}
@@ -93,8 +91,7 @@ func fetchCommandDescription(addon *Addon, baseUrl string, PossibleFeatures map[
 			continue
 		}
 
-		commandUrl := fmt.Sprintf("%s%s", baseUrl, PossibleFeatures[className])
-		fileContent, err := fetchFile(commandUrl)
+		fileContent, err := fetchFile(fmt.Sprintf("%s/%s", baseUrl, PossibleFeatures[className]))
 		if err != nil {
 			continue
 		}
@@ -121,8 +118,7 @@ func fetchHudDescription(addon *Addon, baseUrl string, PossibleFeatures map[stri
 			continue
 		}
 
-		commandUrl := fmt.Sprintf("%s%s", baseUrl, PossibleFeatures[className])
-		fileContent, err := fetchFile(commandUrl)
+		fileContent, err := fetchFile(fmt.Sprintf("%s/%s", baseUrl, PossibleFeatures[className]))
 		if err != nil {
 			continue
 		}
