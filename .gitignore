@@ -4,7 +4,6 @@
 *.so
 *.dylib
 
-
 *.test
 
 *.out
@@ -17,3 +16,6 @@ go.work.sum
 
 build
 .env
+
+.idea/
+.vscode/

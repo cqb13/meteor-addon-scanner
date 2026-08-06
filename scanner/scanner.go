@@ -192,21 +192,21 @@ func Locate(verifiedAddons []string) map[string]bool {
 		repos[strings.ToLower(addon)] = true
 	}
 
-	//url := fmt.Sprintf("https://api.github.com/search/code?q=entrypoints+meteor+extension:json+filename:fabric.mod.json+fork:true+in:file&per_page=%v&page=", reposPerPage)
-	//fetchBySearch("fabric.mod.json", url)
-	//url = fmt.Sprintf("https://api.github.com/search/code?q=extends+MeteorAddon+language:java+in:file&per_page=%v&page=", reposPerPage)
-	//fetchBySearch("Extend MeteorAddon", url)
-	//
-	//url = fmt.Sprintf("https://api.github.com/search/repositories?q=topic:meteor-addon&per_page=%d&page=", reposPerPage)
-	//fetchBySearch("meteor-addon topic", url)
-	//url = fmt.Sprintf("https://api.github.com/search/repositories?q=topic:meteor-client-addon&per_page=%d&page=", reposPerPage)
-	//fetchBySearch("meteor-client-addon topic", url)
-	//url = fmt.Sprintf("https://api.github.com/search/repositories?q=meteor-addon+in:name,description&per_page=%d&page=", reposPerPage)
-	//fetchBySearch("meteor-addon in name or description", url)
-	//url = fmt.Sprintf("https://api.github.com/search/repositories?q=meteor-client+addon+in:description&per_page=%d&page=", reposPerPage)
-	//fetchBySearch("meteor-client addon in description", url)
-	//
-	//fetchByForkOfTemplate()
+	url := fmt.Sprintf("https://api.github.com/search/code?q=entrypoints+meteor+extension:json+filename:fabric.mod.json+fork:true+in:file&per_page=%v&page=", reposPerPage)
+	fetchBySearch("fabric.mod.json", url)
+	url = fmt.Sprintf("https://api.github.com/search/code?q=extends+MeteorAddon+language:java+in:file&per_page=%v&page=", reposPerPage)
+	fetchBySearch("Extend MeteorAddon", url)
+
+	url = fmt.Sprintf("https://api.github.com/search/repositories?q=topic:meteor-addon&per_page=%d&page=", reposPerPage)
+	fetchBySearch("meteor-addon topic", url)
+	url = fmt.Sprintf("https://api.github.com/search/repositories?q=topic:meteor-client-addon&per_page=%d&page=", reposPerPage)
+	fetchBySearch("meteor-client-addon topic", url)
+	url = fmt.Sprintf("https://api.github.com/search/repositories?q=meteor-addon+in:name,description&per_page=%d&page=", reposPerPage)
+	fetchBySearch("meteor-addon in name or description", url)
+	url = fmt.Sprintf("https://api.github.com/search/repositories?q=meteor-client+addon+in:description&per_page=%d&page=", reposPerPage)
+	fetchBySearch("meteor-client addon in description", url)
+
+	fetchByForkOfTemplate()
 
 	return repos
 }

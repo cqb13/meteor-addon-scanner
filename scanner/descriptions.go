@@ -81,7 +81,7 @@ func fetchModuleDescription(addon *Addon, baseUrl string, PossibleFeaturesSet ma
 		}
 
 		addon.Features.Modules[i].Description = desc
-		delete(PossibleFeaturesSet, className) // <-- does this even matter? or is it just unnecessary overhead
+		delete(PossibleFeaturesSet, className)
 	}
 }
 
@@ -109,7 +109,7 @@ func fetchCommandDescription(addon *Addon, baseUrl string, PossibleFeaturesSet m
 		}
 
 		addon.Features.Commands[i].Description = desc
-		delete(PossibleFeaturesSet, className) // <-- does this even matter? or is it just unnecessary overhead
+		delete(PossibleFeaturesSet, className)
 	}
 }
 
@@ -138,7 +138,7 @@ func fetchHudDescription(addon *Addon, baseUrl string, PossibleFeaturesSet map[s
 		}
 
 		addon.Features.HudElements[i].Description = desc
-		delete(PossibleFeaturesSet, className) // <-- does this even matter? or is it just unnecessary overhead
+		delete(PossibleFeaturesSet, className)
 	}
 }
 
