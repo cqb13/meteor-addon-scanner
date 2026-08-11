@@ -73,12 +73,10 @@ func fetchModuleDescription(addon *Addon, baseUrl string, PossibleFeatures map[s
 		}
 
 		matches := moduleDescriptionRegex.FindStringSubmatch(fileContent)
-		desc := ""
 		if len(matches) > 1 {
-			desc = matches[1]
+			addon.Features.Modules[i].Description = matches[1]
 		}
 
-		addon.Features.Modules[i].Description = desc
 		delete(PossibleFeatures, className)
 	}
 }
@@ -100,12 +98,10 @@ func fetchCommandDescription(addon *Addon, baseUrl string, PossibleFeatures map[
 			continue
 		}
 		matches := commandDescriptionRegex.FindStringSubmatch(fileContent)
-		desc := ""
 		if len(matches) > 1 {
-			desc = matches[1]
+			addon.Features.Commands[i].Description = matches[1]
 		}
 
-		addon.Features.Commands[i].Description = desc
 		delete(PossibleFeatures, className)
 	}
 }
@@ -128,12 +124,10 @@ func fetchHudDescription(addon *Addon, baseUrl string, PossibleFeatures map[stri
 		}
 
 		matches := hudElementDescriptionRegex.FindStringSubmatch(fileContent)
-		desc := ""
 		if len(matches) > 1 {
-			desc = matches[1]
+			addon.Features.HudElements[i].Description = matches[1]
 		}
 
-		addon.Features.HudElements[i].Description = desc
 		delete(PossibleFeatures, className)
 	}
 }

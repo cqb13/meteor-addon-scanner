@@ -127,7 +127,7 @@ type Features struct {
 
 type Feature struct {
 	Name        string `json:"name"`
-	Description string `json:"description"`
+	Description string `json:"description,omitempty"`
 }
 
 type Repo struct {
