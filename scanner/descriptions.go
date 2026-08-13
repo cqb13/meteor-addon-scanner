@@ -1,7 +1,9 @@
 package scanner
 
 import (
+	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"regexp"
 	"strings"
 )
@@ -10,99 +12,122 @@ var moduleDescriptionRegex = regexp.MustCompile(`super\s*\(\s*[^,]+,\s*"[^"]*"\s
 var commandDescriptionRegex = regexp.MustCompile(`super\s*\(\s*"[^"]*"\s*,\s*"([^"]*)"`)
 var hudElementDescriptionRegex = regexp.MustCompile(`new\s+HudElementInfo<[^>]*>\s*\([^,]+,\s*"[^"]*"\s*,\s*"([^"]*)"`)
 
+type treeResponse struct {
+	SHA  string `json:"sha"`
+	URL  string `json:"url"`
+	Tree []struct {
+		Path string `json:"path"`
+		Mode string `json:"mode"`
+		Type string `json:"type"`
+		SHA  string `json:"sha"`
+		Size int64  `json:"size,omitempty"`
+		URL  string `json:"url"`
+	} `json:"tree"`
+	Truncated bool `json:"truncated"`
+}
+
+type FeatureType int
+
+const (
+	Module FeatureType = iota
+	Command
+	HudElement
+)
+
+func (f FeatureType) String() string {
+	switch f {
+	case Module:
+		return "Module"
+	case Command:
+		return "Command"
+	case HudElement:
+		return "HudElement"
+	default:
+		return "Module"
+	}
+}
+
+func (f FeatureType) MatchRegex() *regexp.Regexp {
+	switch f {
+	case Module:
+		return moduleDescriptionRegex
+	case Command:
+		return commandDescriptionRegex
+	case HudElement:
+		return hudElementDescriptionRegex
+	default:
+		return moduleDescriptionRegex
+	}
+}
+
 func fetchDescriptions(addon *Addon) {
-	baseUrl := fmt.Sprintf("https://raw.githubusercontent.com/%v/%v/src/main/java/%v", addon.Repo.Id, addon.Repo.defaultBranch, packageFromEntrypoint(addon.entrypoint))
-	if len(addon.Custom.FeatureDirectories.Modules) != 0 {
-		fetchModuleDescription(addon, baseUrl)
+	entryPoint := packageFromEntrypoint(addon.entrypoint)
+	baseUrl := fmt.Sprintf("https://raw.githubusercontent.com/%v/%v/src/main/java/%v", addon.Repo.Id, addon.Repo.defaultBranch, entryPoint)
+
+	searchUrl, err := MakeGetRequest(fmt.Sprintf("https://api.github.com/repos/%v/git/trees/%v?recursive=1", addon.Repo.Id, addon.Repo.defaultBranch))
+	if err != nil {
+		return
 	}
 
-	if len(addon.Custom.FeatureDirectories.Commands) != 0 {
-		fetchCommandDescription(addon, baseUrl)
+	var response treeResponse
+	if err := json.Unmarshal(searchUrl, &response); err != nil {
+		fmt.Printf("\tFailed to parse %s: %v\n", addon.Name, err)
+		return
 	}
 
-	if len(addon.Custom.FeatureDirectories.HudElements) != 0 {
-		fetchHudDescription(addon, baseUrl)
+	if response.Truncated {
+		fmt.Printf("\tWarning: %v tree was truncated by github", addon.Repo.Id)
+	}
+
+	featureClasses := make(map[string]string)
+	path := fmt.Sprintf("src/main/java/%v/", entryPoint)
+
+	for _, item := range response.Tree {
+		if item.Type == "blob" && strings.HasPrefix(item.Path, path) && strings.HasSuffix(item.Path, ".java") {
+			className := strings.TrimSuffix(filepath.Base(item.Path), ".java")
+			_, relativePath, _ := strings.Cut(item.Path, path)
+			featureClasses[className] = relativePath
+		}
+	}
+
+	if len(addon.Features.Modules) != 0 {
+		fetchFeatureDescription(Module, addon.Features.Modules, baseUrl, featureClasses)
+	}
+
+	if len(addon.Features.Commands) != 0 {
+		fetchFeatureDescription(Command, addon.Features.Commands, baseUrl, featureClasses)
+	}
+
+	if len(addon.Features.HudElements) != 0 {
+		fetchFeatureDescription(HudElement, addon.Features.HudElements, baseUrl, featureClasses)
 	}
 }
 
-func fetchModuleDescription(addon *Addon, baseUrl string) {
-	for i := range addon.Features.Modules {
-		className := strings.ReplaceAll(addon.Features.Modules[i].Name, " ", "")
+func fetchFeatureDescription(featureType FeatureType, features []Feature, baseUrl string, featureClasses map[string]string) {
+	matchExp := featureType.MatchRegex()
 
-		for _, directory := range addon.Custom.FeatureDirectories.Modules {
-			moduleUrl := fmt.Sprintf("%s/%s/%s.java", baseUrl, directory, className)
+	for i, feature := range features {
+		className := strings.ReplaceAll(feature.Name, " ", "")
 
-			fileContent, err := fetchFile(moduleUrl)
-			if err != nil {
-				continue
-			}
-
-			if !strings.Contains(fileContent, "extends Module") || !strings.Contains(fileContent, fmt.Sprintf("public %s", className)) {
-				continue
-			}
-
-			matches := moduleDescriptionRegex.FindStringSubmatch(fileContent)
-			desc := ""
-			if len(matches) > 1 {
-				desc = matches[1]
-			}
-
-			addon.Features.Modules[i].Description = desc
+		if _, exists := featureClasses[className]; !exists {
+			continue
 		}
-	}
-}
 
-func fetchCommandDescription(addon *Addon, baseUrl string) {
-	for i := range addon.Features.Commands {
-		className := strings.ReplaceAll(addon.Features.Commands[i].Name, " ", "")
-
-		for _, directory := range addon.Custom.FeatureDirectories.Commands {
-			commandUrl := fmt.Sprintf("%s/%s/%s.java", baseUrl, directory, className)
-
-			fileContent, err := fetchFile(commandUrl)
-			if err != nil {
-				continue
-			}
-
-			if !strings.Contains(fileContent, "extends Command") || !strings.Contains(fileContent, fmt.Sprintf("public %s", className)) {
-				continue
-			}
-
-			matches := commandDescriptionRegex.FindStringSubmatch(fileContent)
-			desc := ""
-			if len(matches) > 1 {
-				desc = matches[1]
-			}
-
-			addon.Features.Commands[i].Description = desc
+		fileContent, err := fetchFile(fmt.Sprintf("%s/%s", baseUrl, featureClasses[className]))
+		if err != nil {
+			continue
 		}
-	}
-}
 
-func fetchHudDescription(addon *Addon, baseUrl string) {
-	for i := range addon.Features.HudElements {
-		className := strings.ReplaceAll(addon.Features.HudElements[i].Name, " ", "")
-
-		for _, directory := range addon.Custom.FeatureDirectories.HudElements {
-			hudUrl := fmt.Sprintf("%s/%s/%s.java", baseUrl, directory, className)
-
-			fileContent, err := fetchFile(hudUrl)
-			if err != nil {
-				continue
-			}
-
-			if !strings.Contains(fileContent, "extends HudElement") || !strings.Contains(fileContent, fmt.Sprintf("public %s", className)) {
-				continue
-			}
-
-			matches := hudElementDescriptionRegex.FindStringSubmatch(fileContent)
-			desc := ""
-			if len(matches) > 1 {
-				desc = matches[1]
-			}
-
-			addon.Features.HudElements[i].Description = desc
+		if !strings.Contains(fileContent, fmt.Sprintf("extends %s", featureType.String())) || !strings.Contains(fileContent, fmt.Sprintf("public %s", className)) {
+			continue
 		}
+
+		matches := matchExp.FindStringSubmatch(fileContent)
+		if len(matches) > 1 {
+			features[i].Description = matches[1]
+		}
+
+		delete(featureClasses, className)
 	}
 }
 

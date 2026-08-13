@@ -207,3 +207,8 @@ func CompareMinecraftVersions(versionA, versionB string) int {
 
 	return 0
 }
+
+func validTag(tag string) (string, bool) {
+	realTag, ok := validTags[strings.ToLower(tag)]
+	return realTag.String(), ok
+}

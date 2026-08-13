@@ -2,7 +2,6 @@ package scanner
 
 import (
 	"regexp"
-	"strings"
 )
 
 type Config struct {
@@ -108,17 +107,12 @@ type Addon struct {
 }
 
 type Custom struct {
-	Description        string   `json:"description"`
-	Tags               []string `json:"tags"`
-	SupportedVersions  []string `json:"supported_versions"`
-	Icon               string   `json:"icon"`
-	Discord            string   `json:"discord"`
-	Homepage           string   `json:"homepage"`
-	FeatureDirectories struct {
-		Modules     []string `json:"modules"`
-		Commands    []string `json:"commands"`
-		HudElements []string `json:"hud_elements"`
-	} `json:"feature_directories"`
+	Description       string   `json:"description"`
+	Tags              []string `json:"tags"`
+	SupportedVersions []string `json:"supported_versions"`
+	Icon              string   `json:"icon"`
+	Discord           string   `json:"discord"`
+	Homepage          string   `json:"homepage"`
 }
 
 type Features struct {
@@ -132,7 +126,7 @@ type Features struct {
 
 type Feature struct {
 	Name        string `json:"name"`
-	Description string `json:"description"`
+	Description string `json:"description,omitempty"`
 }
 
 type Repo struct {
@@ -201,9 +195,4 @@ type release struct {
 		Url       string `json:"browser_download_url"`
 		Downloads int    `json:"download_count"`
 	} `json:"assets"`
-}
-
-func validTag(tag string) (string, bool) {
-	realTag, ok := validTags[strings.ToLower(tag)]
-	return realTag.String(), ok
 }

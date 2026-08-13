@@ -173,4 +173,3 @@ func SendWebhookPayload(payload *WebhookPayload, url string) (*http.Response, er
 
 	return resp, nil
 }
-
