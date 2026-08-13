@@ -2,7 +2,6 @@ package scanner
 
 import (
 	"regexp"
-	"strings"
 )
 
 type Config struct {
@@ -196,23 +195,4 @@ type release struct {
 		Url       string `json:"browser_download_url"`
 		Downloads int    `json:"download_count"`
 	} `json:"assets"`
-}
-
-type TreeResponse struct {
-	SHA  string `json:"sha"`
-	URL  string `json:"url"`
-	Tree []struct {
-		Path string `json:"path"`
-		Mode string `json:"mode"`
-		Type string `json:"type"`
-		SHA  string `json:"sha"`
-		Size int64  `json:"size,omitempty"`
-		URL  string `json:"url"`
-	} `json:"tree"`
-	Truncated bool `json:"truncated"`
-}
-
-func validTag(tag string) (string, bool) {
-	realTag, ok := validTags[strings.ToLower(tag)]
-	return realTag.String(), ok
 }

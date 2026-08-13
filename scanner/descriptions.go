@@ -12,6 +12,20 @@ var moduleDescriptionRegex = regexp.MustCompile(`super\s*\(\s*[^,]+,\s*"[^"]*"\s
 var commandDescriptionRegex = regexp.MustCompile(`super\s*\(\s*"[^"]*"\s*,\s*"([^"]*)"`)
 var hudElementDescriptionRegex = regexp.MustCompile(`new\s+HudElementInfo<[^>]*>\s*\([^,]+,\s*"[^"]*"\s*,\s*"([^"]*)"`)
 
+type treeResponse struct {
+	SHA  string `json:"sha"`
+	URL  string `json:"url"`
+	Tree []struct {
+		Path string `json:"path"`
+		Mode string `json:"mode"`
+		Type string `json:"type"`
+		SHA  string `json:"sha"`
+		Size int64  `json:"size,omitempty"`
+		URL  string `json:"url"`
+	} `json:"tree"`
+	Truncated bool `json:"truncated"`
+}
+
 type FeatureType int
 
 const (
@@ -55,7 +69,7 @@ func fetchDescriptions(addon *Addon) {
 		return
 	}
 
-	var response TreeResponse
+	var response treeResponse
 	if err := json.Unmarshal(searchUrl, &response); err != nil {
 		fmt.Printf("\tFailed to parse %s: %v\n", addon.Name, err)
 		return
