@@ -43,11 +43,16 @@ jobs:
           set -euo pipefail
           git fetch origin addons || true
 
-          if git show origin/addons:invalid-repo-log.txt > data/invalid-repo-log.txt 2>/dev/null; then
+          DAY_OF_MONTH=$(date -u +%d)
+
+          if [ "$DAY_OF_MONTH" = "01" ]; then
+            echo "First day of the month; resetting invalid-repo-log.txt"
+            : > data/invalid-repo-log.txt
+          elif git show origin/addons:invalid-repo-log.txt > data/invalid-repo-log.txt 2>/dev/null; then
             echo "Loaded invalid-repo-log.txt from addons branch"
           else
             echo "No invalid-repo-log.txt found on addons branch; creating empty file"
-            : > invalid-repo-log.txt
+            : > data/invalid-repo-log.txt
           fi
 
       - name: Run scanner and generate files
