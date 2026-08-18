@@ -51,7 +51,7 @@ func main() {
 		return
 	}
 
-	config, err := internal.LoadConfig("config.json")
+	config, err := internal.LoadConfig(configPath)
 	if err != nil {
 		fmt.Printf("Failed to load config: %s\n", err)
 		return

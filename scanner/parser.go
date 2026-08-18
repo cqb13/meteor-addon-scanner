@@ -149,7 +149,7 @@ func ParseRepo(fullName string, config *Config) (*Addon, error) {
 	return &addon, nil
 }
 
-func ParseRepos(repos map[string]bool, config *Config, invalidAddonsLog map[string]any) []*Addon {
+func ParseRepos(repos map[string]struct{}, config *Config, invalidAddonsLog map[string]any) []*Addon {
 	verifiedSet := make(map[string]bool)
 	for _, repo := range config.VerifiedAddons.Verified {
 		verifiedSet[strings.ToLower(repo)] = true

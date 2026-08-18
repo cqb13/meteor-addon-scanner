@@ -15,21 +15,16 @@ type InvalidAddon struct {
 	Details map[string]any `json:"details,omitempty"`
 }
 
-var repos = make(map[string]bool)
+var repos = make(map[string]struct{})
 
 const reposPerPage int = 100
 
 func fetchBySearch(name string, url string) {
-	var attempts int = RetryAttempts
+	attempts := RetryAttempts
 
-	var complete bool = false
-	var page int = 1
+	page := 1
 	fmt.Printf("\tFetching based on %v\n", name)
 	for {
-		if complete {
-			break
-		}
-
 		if attempts == 0 {
 			fmt.Printf("Failed to make search request\n")
 			os.Exit(1)
@@ -98,13 +93,12 @@ func fetchBySearch(name string, url string) {
 
 			if !priv && !strings.HasSuffix(lower, "-addon-template") {
 				if _, ok := repos[lower]; !ok {
-					repos[lower] = false
+					repos[lower] = struct{}{}
 				}
 			}
 		}
 
 		if reposOnPage == 0 {
-			complete = true
 			break
 		}
 
@@ -119,17 +113,12 @@ func fetchBySearch(name string, url string) {
 
 // Fetch all repos that are forks of the template
 func fetchByForkOfTemplate() {
-	var attempts int = RetryAttempts
+	attempts := RetryAttempts
 	url := fmt.Sprintf("https://api.github.com/repos/MeteorDevelopment/meteor-addon-template/forks?per_page=%v&page=", reposPerPage)
 
-	var complete bool = false
-	var page int = 1
+	page := 1
 	fmt.Printf("\tFetching fokrs of template\n")
 	for {
-		if complete {
-			break
-		}
-
 		if attempts == 0 {
 			fmt.Printf("Failed to make search request\n")
 			os.Exit(1)
@@ -161,7 +150,7 @@ func fetchByForkOfTemplate() {
 			os.Exit(1)
 		}
 
-		var reposOnPage int = len(result)
+		reposOnPage := len(result)
 
 		fmt.Printf("Found %v Repositories\n", reposOnPage)
 
@@ -169,12 +158,11 @@ func fetchByForkOfTemplate() {
 			_, ok := repos[strings.ToLower(repo.FullName)]
 
 			if !repo.Private && !ok && !strings.HasSuffix(strings.ToLower(repo.FullName), "-addon-template") {
-				repos[repo.FullName] = false
+				repos[repo.FullName] = struct{}{}
 			}
 		}
 
 		if reposOnPage == 0 {
-			complete = true
 			break
 		}
 
@@ -187,9 +175,9 @@ func fetchByForkOfTemplate() {
 	}
 }
 
-func Locate(verifiedAddons []string) map[string]bool {
+func Locate(verifiedAddons []string) map[string]struct{} {
 	for _, addon := range verifiedAddons {
-		repos[strings.ToLower(addon)] = true
+		repos[strings.ToLower(addon)] = struct{}{}
 	}
 
 	url := fmt.Sprintf("https://api.github.com/search/code?q=entrypoints+meteor+extension:json+filename:fabric.mod.json+fork:true+in:file&per_page=%v&page=", reposPerPage)
