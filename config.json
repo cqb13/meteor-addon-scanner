@@ -69,8 +69,8 @@
   },
   "module_descriptions": {
     "fetch": true,
-    "only_verified": true,
-    "minimum_star_count": 0
+    "only_verified": false,
+    "minimum_star_count": 2
   },
   "require_mc_version": true,
   "ignore_archived": false,
