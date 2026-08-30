@@ -63,7 +63,9 @@
       "cqb13/Mapart-Exporter-Addon",
       "flaryx32/MeteorServerSeeker",
       "Frko5000/Nerd-Addon",
-      "wuritz/genyo-addon"
+      "wuritz/genyo-addon",
+      "Gingerbeard5773/dino-printer",
+      ""
     ],
     "minimum_mc_version": "1.21",
     "validate_forks": true
