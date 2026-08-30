@@ -62,7 +62,8 @@
       "Gingerbeard5773/meteor-valley-builder",
       "cqb13/Mapart-Exporter-Addon",
       "flaryx32/MeteorServerSeeker",
-      "Frko5000/Nerd-Addon"
+      "Frko5000/Nerd-Addon",
+      "wuritz/genyo-addon"
     ],
     "minimum_mc_version": "1.21",
     "validate_forks": true
