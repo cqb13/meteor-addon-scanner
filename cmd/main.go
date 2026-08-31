@@ -33,7 +33,7 @@ func main() {
 	}
 
 	invalidRepoLogPath := ""
-	invalidRepoLog := make(map[string]any)
+	invalidRepoLog := make(map[string]struct{})
 	if len(args) >= 4 {
 		invalidRepoLogPath = args[3]
 
@@ -77,14 +77,14 @@ func main() {
 	repos := scanner.Locate(config.VerifiedAddons.Verified)
 	fmt.Printf("Located %v repos\n", len(repos))
 
-	removed := internal.RemoveBlacklistedRepositories(config, repos)
-	fmt.Printf("Removed %d/%d repo blacklisted repositories\n", removed, len(config.BlacklistedRepos))
-
-	removed = internal.RemoveBlacklistedDevelopers(config, repos)
-	fmt.Printf("Removed %d repositories from blacklisted developers\n", removed)
+	removedByRepo, removedByDeveloper, removedByRepoName, removedByInvalidRepoLog := filterRepos(config, invalidRepoLog, repos)
+	fmt.Printf("Removed %d repositories marked as invalid\n", removedByInvalidRepoLog)
+	fmt.Printf("Removed %d blacklisted repositories\n", removedByRepo)
+	fmt.Printf("Removed %d repositories from blacklisted developers\n", removedByDeveloper)
+	fmt.Printf("Removed %d blacklisted repository names\n", removedByRepoName)
 
 	fmt.Println("Parsing Repositories")
-	addons := scanner.ParseRepos(repos, config, invalidRepoLog)
+	addons := scanner.ParseRepos(config, repos)
 	fmt.Printf("Found %d/%d valid addons\n", len(addons), len(repos))
 
 	if config.VerifiedAddons.ValidateForks {
@@ -188,6 +188,70 @@ func main() {
 	}
 
 	fmt.Println("Done!")
+}
+
+// filterRepos removes repos based on the blacklisted repos, developers, and repo names, defined in the config as well as repos in the invalid repo log
+//
+// Returns the amount of each removed
+func filterRepos(config *scanner.Config, invalidRepoLog map[string]struct{}, repos map[string]struct{}) (removedByRepo int, removedByDeveloper int, removedByRepoName int, removedByInvalidRepoLog int) {
+	blacklistedRepos := make(map[string]struct{}, len(config.BlacklistedRepos))
+	blacklistedDevelopers := make(map[string]struct{}, len(config.BlacklistedDevs))
+	blacklistedNames := make(map[string]struct{}, len(config.BlacklistedRepoNames))
+
+	for _, repo := range config.BlacklistedRepos {
+		blacklistedRepos[strings.ToLower(repo)] = struct{}{}
+	}
+
+	for _, dev := range config.BlacklistedDevs {
+		blacklistedDevelopers[strings.ToLower(dev)] = struct{}{}
+	}
+
+	for _, name := range config.BlacklistedRepoNames {
+		blacklistedNames[strings.ToLower(name)] = struct{}{}
+	}
+
+	removedByRepo = 0
+	removedByDeveloper = 0
+	removedByRepoName = 0
+	removedByInvalidRepoLog = 0
+
+	for fullName := range repos {
+		// Invalid repo log
+		_, exist := invalidRepoLog[fullName]
+		if exist {
+			delete(repos, fullName)
+			removedByInvalidRepoLog++
+			continue
+		}
+
+		// Repo blacklist
+		if _, exist := blacklistedRepos[strings.ToLower(fullName)]; exist {
+			delete(repos, fullName)
+			removedByRepo++
+			continue
+		}
+
+		owner, name, ok := strings.Cut(strings.ToLower(fullName), "/")
+
+		if !ok {
+			continue
+		}
+		// Developer blacklist
+		if _, bad := blacklistedDevelopers[owner]; bad {
+			delete(repos, fullName)
+			removedByDeveloper++
+			continue
+		}
+
+		// Ignored names blacklist
+		if _, bad := blacklistedNames[name]; bad {
+			delete(repos, fullName)
+			removedByRepoName++
+			continue
+		}
+	}
+
+	return
 }
 
 func validateOutputPath(output string) error {

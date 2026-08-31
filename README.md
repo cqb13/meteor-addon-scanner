@@ -16,7 +16,7 @@ Check out the [Meteor Addon List](https://meteoraddons.com)
 {
   "repo_blacklist": [],
   "developer_blacklist": [],
-  "ignored_repo_names": ["meteor-client"],
+  "repo_name_blacklist": ["meteor-client"],
   "verified_addons": {
     "verified": [],
     "minimum_mc_version": "1.20",

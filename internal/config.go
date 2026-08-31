@@ -42,7 +42,7 @@ func ValidateConfigPath(path string) error {
 	return nil
 }
 
-func LoadInvalidRepoLog(path string, invalidRepoLog map[string]any) bool {
+func LoadInvalidRepoLog(path string, invalidRepoLog map[string]struct{}) bool {
 	file, err := os.Open(path)
 	if err != nil {
 		return false
@@ -55,7 +55,7 @@ func LoadInvalidRepoLog(path string, invalidRepoLog map[string]any) bool {
 	}
 
 	for line := range strings.SplitSeq(string(bytes), "\n") {
-		invalidRepoLog[line] = nil
+		invalidRepoLog[line] = struct{}{}
 	}
 
 	return true

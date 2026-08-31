@@ -149,21 +149,15 @@ func ParseRepo(fullName string, config *Config) (*Addon, error) {
 	return &addon, nil
 }
 
-func ParseRepos(repos map[string]struct{}, config *Config, invalidAddonsLog map[string]any) []*Addon {
+func ParseRepos(config *Config, repos map[string]struct{}) []*Addon {
 	verifiedSet := make(map[string]bool)
 	for _, repo := range config.VerifiedAddons.Verified {
 		verifiedSet[strings.ToLower(repo)] = true
 	}
 
-	ignoredNames := make(map[string]struct{})
-	for _, name := range config.IgnoredRepoNames {
-		ignoredNames[strings.ToLower(name)] = struct{}{}
-	}
-
 	var addons []*Addon
 	var addonsMutex sync.Mutex
 
-	var invalidAddonsLogMutex sync.Mutex
 	var wg sync.WaitGroup
 
 	semaphore := make(chan struct{}, 10)
@@ -177,25 +171,8 @@ func ParseRepos(repos map[string]struct{}, config *Config, invalidAddonsLog map[
 			semaphore <- struct{}{}
 			defer func() { <-semaphore }()
 
-			_, repoName, _ := strings.Cut(repoFullName, "/")
-			_, ok := ignoredNames[repoName]
-			if ok {
-				fmt.Printf("\tSkipping %s: Ignored repo name\n", repoFullName)
-				return
-			}
-
-			_, ok = invalidAddonsLog[repoFullName]
-			if ok {
-				fmt.Printf("\tSkipping %s: Marked as invalid\n", repoFullName)
-				return
-			}
-
 			addon, err := ParseRepo(repoFullName, config)
 			if err != nil {
-				invalidAddonsLogMutex.Lock()
-				invalidAddonsLog[repoFullName] = nil
-				invalidAddonsLogMutex.Unlock()
-
 				fmt.Printf("\tFailed to parse %s: %v\n", repoFullName, err)
 				return
 			}

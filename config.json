@@ -9,7 +9,7 @@
     "usama5860/blackout"
   ],
   "developer_blacklist": ["gottasweep"],
-  "ignored_repo_names": ["meteor-client"],
+  "repo_name_blacklist": ["meteor-client"],
   "verified_addons": {
     "verified": [
       "AntiCope/meteor-rejects",

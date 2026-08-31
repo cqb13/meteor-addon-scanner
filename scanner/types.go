@@ -5,10 +5,10 @@ import (
 )
 
 type Config struct {
-	BlacklistedRepos []string `json:"repo_blacklist"`
-	BlacklistedDevs  []string `json:"developer_blacklist"`
-	IgnoredRepoNames []string `json:"ignored_repo_names"`
-	VerifiedAddons   struct {
+	BlacklistedRepos     []string `json:"repo_blacklist"`
+	BlacklistedDevs      []string `json:"developer_blacklist"`
+	BlacklistedRepoNames []string `json:"repo_name_blacklist"`
+	VerifiedAddons       struct {
 		Verified            []string `json:"verified"`
 		MinMinecraftVersion string   `json:"minimum_mc_version"`
 		ValidateForks       bool     `json:"validate_forks"`
