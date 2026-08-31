@@ -1,5 +1,5 @@
 {
-  "repo-blacklist": [
+  "repo_blacklist": [
     "asteroide-development/Asteroide",
     "creed27-tech/Saturn-Addon-1.21.4",
     "leonidas-oliveira/blackout",
@@ -8,7 +8,8 @@
     "rohit1270/blackout",
     "usama5860/blackout"
   ],
-  "developer-blacklist": ["gottasweep"],
+  "developer_blacklist": ["gottasweep"],
+  "ignored_repo_names": ["meteor-client"],
   "verified_addons": {
     "verified": [
       "AntiCope/meteor-rejects",
