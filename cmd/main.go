@@ -84,7 +84,7 @@ func main() {
 	fmt.Printf("Removed %d blacklisted repository names\n", removedByRepoName)
 
 	fmt.Println("Parsing Repositories")
-	addons := scanner.ParseRepos(config, repos)
+	addons := scanner.ParseRepos(config, repos, invalidRepoLog)
 	fmt.Printf("Found %d/%d valid addons\n", len(addons), len(repos))
 
 	if config.VerifiedAddons.ValidateForks {

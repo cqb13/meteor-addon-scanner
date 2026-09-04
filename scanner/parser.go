@@ -149,7 +149,7 @@ func ParseRepo(fullName string, config *Config) (*Addon, error) {
 	return &addon, nil
 }
 
-func ParseRepos(config *Config, repos map[string]struct{}, invalidAddonsLog map[string]any) []*Addon {
+func ParseRepos(config *Config, repos map[string]struct{}, invalidAddonsLog map[string]struct{}) []*Addon {
 	verifiedSet := make(map[string]bool)
 	for _, repo := range config.VerifiedAddons.Verified {
 		verifiedSet[strings.ToLower(repo)] = true
@@ -175,7 +175,7 @@ func ParseRepos(config *Config, repos map[string]struct{}, invalidAddonsLog map[
 			addon, err := ParseRepo(repoFullName, config)
 			if err != nil {
 				invalidAddonsLogMutex.Lock()
-				invalidAddonsLog[repoFullName] = nil
+				invalidAddonsLog[repoFullName] = struct{}{}
 				invalidAddonsLogMutex.Unlock()
 
 				fmt.Printf("\tFailed to parse %s: %v\n", repoFullName, err)
