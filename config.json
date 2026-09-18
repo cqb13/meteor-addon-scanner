@@ -68,7 +68,7 @@
       "Gingerbeard5773/dino-printer",
       "cqb13/meteor-gui-plus"
     ],
-    "minimum_mc_version": "1.21",
+    "minimum_mc_version": "1.21.11",
     "validate_forks": true
   },
   "module_descriptions": {
