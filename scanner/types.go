@@ -46,6 +46,7 @@ const (
 	Exploit
 	Fun
 	Automation
+	Printer
 )
 
 func (t Tag) String() string {
@@ -74,6 +75,8 @@ func (t Tag) String() string {
 		return "Fun"
 	case Automation:
 		return "Automation"
+	case Printer:
+		return "Printer"
 	default:
 		return "Unknown"
 	}
@@ -92,6 +95,7 @@ var validTags = map[string]Tag{
 	"exploit":    Exploit,
 	"fun":        Fun,
 	"automation": Automation,
+	"printer":    Printer,
 }
 
 type Addon struct {
