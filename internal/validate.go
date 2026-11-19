@@ -137,7 +137,7 @@ func DetectSuspiciousAddons(addons []*scanner.Addon, config *scanner.Config) map
 		}
 
 		if len(addon.Description) >= config.SuspicionTriggers.DescriptionLength {
-			reasons = append(reasons, fmt.Sprintf("[Exceeding github description length (%d)]", len(addon.Description)))
+			reasons = append(reasons, fmt.Sprintf("[Exceeding description length (%d)]", len(addon.Description)))
 		}
 
 		if len(addon.Custom.Description) >= config.SuspicionTriggers.DescriptionLength {
