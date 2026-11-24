@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -16,7 +15,6 @@ type InvalidAddon struct {
 	Details map[string]any `json:"details,omitempty"`
 }
 
-var mu sync.RWMutex
 var repos = make(map[string]struct{})
 
 const reposPerPage int = 100
@@ -25,12 +23,14 @@ func fetchBySearch(name string, url string) {
 	attempts := RetryAttempts
 
 	page := 1
+	fmt.Printf("\tFetching based on %v\n", name)
 	for {
 		if attempts == 0 {
 			fmt.Printf("Failed to make search request\n")
 			os.Exit(1)
 		}
 
+		fmt.Printf("\t\tFetching Page %v -> ", page)
 		bytes, err := MakeGetRequest(fmt.Sprintf("%s%v", url, page))
 		if err != nil {
 			fmt.Printf("Error: %v (attempt %d/%d)\n", err, RetryAttempts-attempts+1, RetryAttempts)
@@ -39,7 +39,7 @@ func fetchBySearch(name string, url string) {
 		}
 
 		if strings.HasSuffix(string(bytes), "\"status\":\"403\"}") {
-			fmt.Printf("\tRate Limited -> Sleeping for 60 seconds...\n")
+			fmt.Printf("Rate Limited -> Sleeping for 60 seconds...\n")
 			time.Sleep(60 * time.Second)
 			continue
 		}
@@ -62,13 +62,13 @@ func fetchBySearch(name string, url string) {
 
 		err = json.Unmarshal(bytes, &result)
 		if err != nil {
-			fmt.Printf("Failed to parse JSON: %s\n")
+			fmt.Printf("Failed to parse JSON\n")
 			os.Exit(1)
 		}
 
 		var reposOnPage int = len(result.Items)
 
-		fmt.Printf("\tFound %v Repositories on Page %d of '%s'\n", reposOnPage, page, name)
+		fmt.Printf("Found %v Repositories\n", reposOnPage)
 
 		for _, item := range result.Items {
 			var full string
@@ -91,13 +91,11 @@ func fetchBySearch(name string, url string) {
 
 			lower := strings.ToLower(full)
 
-			mu.Lock()
 			if !priv && !strings.HasSuffix(lower, "-addon-template") {
 				if _, ok := repos[lower]; !ok {
 					repos[lower] = struct{}{}
 				}
 			}
-			mu.Unlock()
 		}
 
 		if reposOnPage == 0 {
@@ -107,7 +105,7 @@ func fetchBySearch(name string, url string) {
 		page += 1
 
 		if page > 10 {
-			fmt.Printf("\tFetching over ten pages -> stoping the scanning for %v\n", name)
+			fmt.Printf("\t\tFetching over ten pages -> stoping the scanning for %v", name)
 			break
 		}
 	}
@@ -119,20 +117,22 @@ func fetchByForkOfTemplate() {
 	url := fmt.Sprintf("https://api.github.com/repos/MeteorDevelopment/meteor-addon-template/forks?per_page=%v&page=", reposPerPage)
 
 	page := 1
+	fmt.Printf("\tFetching fokrs of template\n")
 	for {
 		if attempts == 0 {
 			fmt.Printf("Failed to make search request\n")
 			os.Exit(1)
 		}
+		fmt.Printf("\t\tFetching Page %v -> ", page)
 		bytes, err := MakeGetRequest(fmt.Sprintf("%s%v", url, page))
 		if err != nil {
-			fmt.Printf("\tError: %v (attempt %d/%d)\n", err, RetryAttempts-attempts+1, RetryAttempts)
+			fmt.Printf("Error: %v (attempt %d/%d)\n", err, RetryAttempts-attempts+1, RetryAttempts)
 			attempts -= 1
 			continue
 		}
 
 		if strings.HasSuffix(string(bytes), "\"status\":\"403\"}") {
-			fmt.Printf("\tRate Limited -> Sleeping for 60 seconds...\n")
+			fmt.Printf("Rate Limited -> Sleeping for 60 seconds...\n")
 			time.Sleep(60 * time.Second)
 			continue
 		}
@@ -152,15 +152,13 @@ func fetchByForkOfTemplate() {
 
 		reposOnPage := len(result)
 
-		fmt.Printf("\tFound %v Repositories on Page %d of 'forks of template'\n", reposOnPage, page)
+		fmt.Printf("Found %v Repositories\n", reposOnPage)
 
 		for _, repo := range result {
 			_, ok := repos[strings.ToLower(repo.FullName)]
 
 			if !repo.Private && !ok && !strings.HasSuffix(strings.ToLower(repo.FullName), "-addon-template") {
-				mu.Lock()
 				repos[repo.FullName] = struct{}{}
-				mu.Unlock()
 			}
 		}
 
@@ -171,7 +169,7 @@ func fetchByForkOfTemplate() {
 		page += 1
 
 		if page > 10 {
-			fmt.Println("\tFetching over ten pages -> stoping the scanning for forks of template")
+			fmt.Println("\t\tFetching over ten pages -> stoping the scanning for forks of template")
 			break
 		}
 	}
@@ -182,27 +180,21 @@ func Locate(verifiedAddons []string) map[string]struct{} {
 		repos[strings.ToLower(addon)] = struct{}{}
 	}
 
-	searchQueries := map[string]string{
-		"meteor-entrypoint":                   fmt.Sprintf("https://api.github.com/search/code?q=entrypoints+meteor+extension:json+filename:fabric.mod.json+fork:true+in:file&per_page=%v&page=", reposPerPage),
-		"Extend MeteorAddon":                  fmt.Sprintf("https://api.github.com/search/code?q=extends+MeteorAddon+language:java+in:file&per_page=%v&page=", reposPerPage),
-		"meteor-addon topic":                  fmt.Sprintf("https://api.github.com/search/repositories?q=topic:meteor-addon&per_page=%d&page=", reposPerPage),
-		"meteor-client-addon topic":           fmt.Sprintf("https://api.github.com/search/repositories?q=topic:meteor-client-addon&per_page=%d&page=", reposPerPage),
-		"meteor-addon in name or description": fmt.Sprintf("https://api.github.com/search/repositories?q=meteor-addon+in:name,description&per_page=%d&page=", reposPerPage),
-	}
+	url := fmt.Sprintf("https://api.github.com/search/code?q=entrypoints+meteor+extension:json+filename:fabric.mod.json+fork:true+in:file&per_page=%v&page=", reposPerPage)
+	fetchBySearch("fabric.mod.json", url)
+	url = fmt.Sprintf("https://api.github.com/search/code?q=extends+MeteorAddon+language:java+in:file&per_page=%v&page=", reposPerPage)
+	fetchBySearch("Extend MeteorAddon", url)
 
-	var wg sync.WaitGroup
+	url = fmt.Sprintf("https://api.github.com/search/repositories?q=topic:meteor-addon&per_page=%d&page=", reposPerPage)
+	fetchBySearch("meteor-addon topic", url)
+	url = fmt.Sprintf("https://api.github.com/search/repositories?q=topic:meteor-client-addon&per_page=%d&page=", reposPerPage)
+	fetchBySearch("meteor-client-addon topic", url)
+	url = fmt.Sprintf("https://api.github.com/search/repositories?q=meteor-addon+in:name,description&per_page=%d&page=", reposPerPage)
+	fetchBySearch("meteor-addon in name or description", url)
+	url = fmt.Sprintf("https://api.github.com/search/repositories?q=meteor-client+addon+in:description&per_page=%d&page=", reposPerPage)
+	fetchBySearch("meteor-client addon in description", url)
 
-	for name, query := range searchQueries {
-		wg.Go(func() {
-			fetchBySearch(name, query)
-		})
-	}
-
-	wg.Go(func() {
-		fetchByForkOfTemplate()
-	})
-
-	wg.Wait()
+	fetchByForkOfTemplate()
 
 	return repos
 }

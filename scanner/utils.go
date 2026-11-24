@@ -72,7 +72,7 @@ func MakeGetRequest(url string) ([]byte, error) {
 	if tracker.Remaining <= 1 && time.Now().Before(tracker.Reset) {
 		waitTime := time.Until(tracker.Reset)
 		if waitTime > 0 {
-			fmt.Printf("\t[%s] Rate limit reached. Waiting %v seconds...",
+			fmt.Printf("[%s] Rate limit reached. Waiting %v seconds...",
 				apiType, waitTime.Seconds())
 			time.Sleep(waitTime + 1*time.Second)
 			fmt.Printf(" -> ")
